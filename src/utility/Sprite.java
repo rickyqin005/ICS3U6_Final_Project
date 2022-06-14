@@ -1,9 +1,9 @@
+package utility;
 
 
 import java.awt.Graphics;
 import java.io.File;
 import javax.imageio.ImageIO;
-
 import java.awt.image.BufferedImage;
 // possible exceptions
 import java.io.IOException;

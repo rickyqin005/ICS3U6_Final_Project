@@ -1,5 +1,8 @@
+package gameobjects;
 import java.awt.Dimension;
 import java.awt.Point;
+
+import components.Grid;
 
 public class ResidentialBuilding extends Building {
     // single family -> townhouse -> multi-family -> apartment -> condominium -> skycraper

@@ -1,3 +1,4 @@
+package components;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -9,11 +10,15 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
-public class Grid extends Screen {
+import gameobjects.Building;
+import gameobjects.ResidentialBuilding;
+import utility.Sprite;
+
+public class Grid extends GameComponent {
     public static final Dimension DEFAULT_DIMENSIONS = new Dimension(60, 60);
 
     private Dimension dimension;
-    Viewport viewport;
+    private Viewport viewport;
     private ArrayList<Building> buildings = new ArrayList<Building>();
     MouseState mouseState;
     GridMouseListener mouseListener;
@@ -37,6 +42,9 @@ public class Grid extends Screen {
     public Dimension getDimensions() {
         return this.dimension;
     }
+    public Viewport getViewport() {
+        return viewport;
+    }
     public ArrayList<Building> getBuildings() {
         return this.buildings;
     }
@@ -46,6 +54,7 @@ public class Grid extends Screen {
         this.buildings.add(building);
     }
     
+    @Override
     public void update() {
         repaint();
     }
@@ -75,7 +84,7 @@ public class Grid extends Screen {
         //System.out.println("(" + viewport.x + ", " + viewport.y + ")");
         // draw the buildings
         for(Building building: buildings) {
-            try{
+            try {
             Point buildingCoordinate = viewport.mapToViewport(building.getLocation());
             //System.out.println(buildingCoordinate);
             Sprite buildingPicture = building.getPicture(viewport.scale);
@@ -89,12 +98,6 @@ public class Grid extends Screen {
     public class GridMouseListener implements MouseListener {
         public void mouseClicked(MouseEvent e) {
             System.out.println("Mouse was clicked at (" + e.getX() + ", " + e.getY() + ")");
-            
-            if(e.getButton() == MouseEvent.BUTTON1) {
-                viewport.zoomIn();
-            } else if(e.getButton() == MouseEvent.BUTTON3) {
-                viewport.zoomOut();
-            }
         }
         public void mousePressed(MouseEvent e) {     
             System.out.println("Mouse was pressed at (" + e.getX() + ", " + e.getY() + ")");
@@ -118,7 +121,6 @@ public class Grid extends Screen {
         }
         public void mouseDragged(MouseEvent e){
             Point mouseLoc = new Point(e.getX(), e.getY());
-            
             //System.out.println("Mouse was dragged to (" + e.getX() + ", " + e.getY() + ")");
             if(!mouseLoc.equals(mouseState.lastMouseDown)) {
                 viewport.translate(-(mouseLoc.x-mouseState.lastMouseDown.x), -(mouseLoc.y-mouseState.lastMouseDown.y));
@@ -129,7 +131,6 @@ public class Grid extends Screen {
 
     public class MouseState {
         public Point lastMouseDown;
-        
     }
 
     public class Viewport {

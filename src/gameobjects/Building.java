@@ -1,5 +1,9 @@
+package gameobjects;
 import java.awt.Dimension;
 import java.awt.Point;
+
+import components.Grid;
+import utility.Sprite;
 
 public abstract class Building {
     private static int nextId = 1;
