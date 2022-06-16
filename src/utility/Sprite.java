@@ -14,6 +14,7 @@ import java.io.IOException;
  * @version May 2022
  */
 public class Sprite{
+    private static final int STEP = 5;
     private int x;
     private int y;
     private BufferedImage picture;    
@@ -33,7 +34,7 @@ public class Sprite{
         } 
         this.width = this.picture.getWidth();
         this.height = this.picture.getHeight();
-        this.stepX = Const.STEP;
+        this.stepX = STEP;
     }  
 //------------------------------------------------------------------------------
     public int getX(){
