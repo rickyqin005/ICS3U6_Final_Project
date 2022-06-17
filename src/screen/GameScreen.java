@@ -9,7 +9,7 @@ public abstract class GameScreen {
         this.game = game;
     }
     /**
-     * Finds a GameComponent with the specified name, or returns a new GameComponent if it is not found
+     * Finds a GameComponent with the specified name, or returns and adds a new GameComponent if it is not found
      * @param name The name of the component
      * @param ifNotFound The value to return if the requested GameComponent is not found
      */
@@ -21,9 +21,5 @@ public abstract class GameScreen {
         }
         return component;
     }
-    public void update() {
-        for(GameComponent component: game.getGameComponents()) {
-            component.update();
-        }
-    }
+    public abstract void update();
 }

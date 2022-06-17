@@ -15,7 +15,7 @@ public class CollectTaxButton extends JButton {
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                
+                grid.getUser().addSimCoins(grid.getUser().getCollectableTax());
             }
         });
     }

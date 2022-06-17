@@ -7,7 +7,7 @@ import component.GameComponent;
 import screen.*;
 
 public class Game extends JFrame {
-    private static final int FRAMES_PER_SECOND = 40;
+    private static final int FRAMES_PER_SECOND = 10;
     private ArrayList<GameComponent> gameComponents;
     private GameScreen currScreen;
     public Game(String title, int width, int height) {
@@ -34,7 +34,7 @@ public class Game extends JFrame {
     }
 
     private void startLoop() {
-        while (true) {
+        while(true) {
             currScreen.update();
             // Delay to match the desired FPS
             try {

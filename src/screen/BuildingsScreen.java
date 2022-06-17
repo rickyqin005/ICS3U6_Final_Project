@@ -18,4 +18,7 @@ public class BuildingsScreen extends GameScreen {
         super(game);
 
     }
+    public void update() {
+        
+    }
 }

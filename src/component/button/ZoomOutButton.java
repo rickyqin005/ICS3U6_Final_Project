@@ -2,6 +2,7 @@ package component.button;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.Point;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
@@ -15,7 +16,8 @@ public class ZoomOutButton extends JButton {
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                grid.getViewport().zoomOut();
+                Point screenCenter = grid.getViewport().getCenter();
+                grid.getViewport().zoomOut(screenCenter);
             }
         });
     }

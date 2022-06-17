@@ -18,8 +18,13 @@ public abstract class Building {
     private Rectangle plot;
     private int cost;
     private Color background;
-    private Sprite[] pictures;
+    private Sprite[] pictures = new Sprite[Grid.Viewport.SCALES.length];
 
+    private void loadPictures(String pictureName) {
+        for(int i = 0; i < this.getPictures().length; i++) {
+            pictures[i] = new Sprite(0, 0, ImagePath.getImagePath(pictureName, Grid.Viewport.SCALES[i]));
+        }
+    }
     public Building(Grid grid, Rectangle plot, int cost, Color background) {
         this.id = Building.getNextId();
         this.grid = grid;
@@ -34,10 +39,7 @@ public abstract class Building {
         this.plot = plot;
         this.cost = cost;
         this.background = background;
-        this.pictures = new Sprite[Grid.Viewport.SCALES.length];
-        for(int i = 0; i < this.getPictures().length; i++) {
-            this.getPictures()[i] = new Sprite(0, 0, ImagePath.getImagePath(pictureName, Grid.Viewport.SCALES[i]));
-        }
+        loadPictures(pictureName);
     }
 
     public int getId() {

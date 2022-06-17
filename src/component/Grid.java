@@ -5,14 +5,17 @@ import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import exception.NotEnoughSimCoinsException;
 import gameobject.building.*;
 import gameobject.road.*;
-import utility.Const;
+import utility.Direction;
 import utility.Line;
 import utility.Sprite;
 
@@ -21,32 +24,39 @@ public class Grid extends GameComponent {
     private String name;
     private Dimension dimension;
     private Viewport viewport;
+    private User user;
     private ArrayList<Building> buildings;
     private ArrayList<Road> roads;
-    MouseState mouseState;
-    GridMouseListener mouseListener;
-    GridMouseMotionListener mouseMotionListener;
+    private MouseState mouseState;
+    private GridMouseListener mouseListener;
+    private GridMouseMotionListener mouseMotionListener;
+    private GridMouseWheelListener mouseWheelListener;
 
     public Grid(String name) {
         this.name = name;
         dimension = Grid.DEFAULT_DIMENSIONS;
         viewport = new Viewport(this);
+        user = new User(this);
         buildings = new ArrayList<Building>();
         roads = new ArrayList<Road>();
         mouseState = new MouseState();
-        mouseListener = new GridMouseListener();
+        mouseListener = new GridMouseListener(this);
         addMouseListener(mouseListener);
         mouseMotionListener = new GridMouseMotionListener();
         addMouseMotionListener(mouseMotionListener);
+        mouseWheelListener = new GridMouseWheelListener();
+        addMouseWheelListener(mouseWheelListener);
 
-        buildings.add(new ResidentialBuilding(this, new Rectangle(0, 4, 3, 3), 5000, Color.WHITE, "house", 3));
-        buildings.add(new ResidentialBuilding(this, new Rectangle(4, 0, 3, 3), 5000, Color.WHITE, "house", 2));
-        buildings.add(new ResidentialBuilding(this, new Rectangle(0, 0, 3, 3), 5000, Color.WHITE, "house", 1));
+        buildings.add(new ResidentialBuilding(this, new Point(0, 4), 4));
+        buildings.add(new ResidentialBuilding(this, new Point(0, 7), 3));
+        buildings.add(new ResidentialBuilding(this, new Point(7, 0), 0));
+        buildings.add(new ResidentialBuilding(this, new Point(4, 0), 2));
+        buildings.add(new ResidentialBuilding(this, new Point(0, 0), 1));
         buildings.add(new Amenity(this, new Rectangle(4, 4, 6, 4), 20000, Color.WHITE, "school"));
-        buildings.add(new Amenity(this, new Rectangle(10, 12, 8, 6), 50000, Color.WHITE, "policestationlarge"));
-        roads.add(new Road(new Line(new Point(0, 3), Const.RIGHT, 15), 2));
-        roads.add(new Road(new Line(new Point(3, 0), Const.DOWN, 80), 2));
-        roads.add(new Road(new Line(new Point(10, 0), Const.DOWN, 80), 2));
+        buildings.add(new EmergencyServiceBuilding(this, new Rectangle(11, 4, 8, 6), 50000, Color.WHITE, "policestationlarge"));
+        roads.add(new Road(new Line(new Point(0, 3), Direction.RIGHT, 15), 2));
+        roads.add(new Road(new Line(new Point(3, 0), Direction.DOWN, 80), 2));
+        roads.add(new Road(new Line(new Point(10, 0), Direction.DOWN, 80), 2));
 
         /*for(int x = 1; x < dimension.width; x += 4) {
             for(int y = 1; y < dimension.height; y += 4) {
@@ -62,7 +72,6 @@ public class Grid extends GameComponent {
                 }
             }
         }
-
         for(int x = 0; x < dimension.width; x += 4) {
             roads.add(new Road(new Line(new Point(x, 0), Const.DOWN, dimension.height), 2));
         }
@@ -81,6 +90,9 @@ public class Grid extends GameComponent {
     public Viewport getViewport() {
         return viewport;
     }
+    public User getUser() {
+        return user;
+    }
     public ArrayList<Building> getBuildings() {
         return this.buildings;
     }
@@ -88,6 +100,9 @@ public class Grid extends GameComponent {
     }
     public void addBuilding(Building building) {
         this.buildings.add(building);
+    }
+    public ArrayList<Road> getRoads() {
+        return this.roads;
     }
     
     @Override
@@ -142,11 +157,21 @@ public class Grid extends GameComponent {
                 picture.draw(g);
             }
         }
+
+        user.accumulateTax();
+        System.out.println("painted grid");
     }
 
     public class GridMouseListener implements MouseListener {
+        Grid grid;
+        public GridMouseListener(Grid grid) {
+            this.grid = grid;
+        }
         public void mouseClicked(MouseEvent e) {
             System.out.println("Mouse was clicked at (" + e.getX() + ", " + e.getY() + ")");
+            //System.out.println(viewport.mapToGrid(new Point(e.getX(), e.getY())));
+            //Point gridCoordinate = viewport.mapToGrid(new Point(e.getX(), e.getY()));
+            //buildings.add(new ResidentialBuilding(grid, new Point(gridCoordinate.x, gridCoordinate.y), 4));
         }
         public void mousePressed(MouseEvent e) {     
             System.out.println("Mouse was pressed at (" + e.getX() + ", " + e.getY() + ")");
@@ -163,7 +188,6 @@ public class Grid extends GameComponent {
             System.out.println("Mouse exited at (" + e.getX() + ", " + e.getY() + ")");
         }
     }
-
     public class GridMouseMotionListener implements MouseMotionListener {
         public void mouseMoved(MouseEvent e) {
             //System.out.println("Mouse was moved to (" + e.getX() + ", " + e.getY() + ")");
@@ -174,6 +198,15 @@ public class Grid extends GameComponent {
             if(!mouseLoc.equals(mouseState.lastMouseDown)) {
                 viewport.translate(-(mouseLoc.x-mouseState.lastMouseDown.x), -(mouseLoc.y-mouseState.lastMouseDown.y));
                 mouseState.lastMouseDown = mouseLoc;
+            }
+        }
+    }
+    public class GridMouseWheelListener implements MouseWheelListener {
+        public void mouseWheelMoved(MouseWheelEvent e) {
+            if(e.getPreciseWheelRotation() > 0) {
+                viewport.zoomOut(e.getPoint());
+            } else if(e.getPreciseWheelRotation() < 0) {
+                viewport.zoomIn(e.getPoint());
             }
         }
     }
@@ -201,7 +234,7 @@ public class Grid extends GameComponent {
             this.grid = grid;
             x = 0;
             y = 0;
-            setScaleLevel(DEFAULT_SCALE_LEVEL);
+            setScaleLevel(DEFAULT_SCALE_LEVEL, new Point(0,0));
         }
         private void restrictViewportBounds() {
             x = Math.max(x, 0);
@@ -210,27 +243,34 @@ public class Grid extends GameComponent {
             x = Math.min(x, bottomRightCorner.x - grid.getWidth());
             y = Math.min(y, bottomRightCorner.y - grid.getHeight());
         }
+        public Point getCenter() {
+            return new Point(grid.getWidth()/2, grid.getHeight()/2);
+        }
         public int getScale() {
             return scale;
         }
         public int getScaleLevel() {
             return scaleLevel;
         }
-        private void setScaleLevel(int newLevel) {
-            if(newLevel < 0) {
-                newLevel = 0;
-            } else if(newLevel > SCALES.length-1) {
-                newLevel = SCALES.length-1;
+        private void setScaleLevel(int newLevel, Point focalPoint) {
+            if(newLevel < 0 || newLevel > SCALES.length-1) {
+                return;
             }
             int newScale = SCALES[newLevel];
-            x = (int)((double)x/scale*newScale);
-            y = (int)((double)y/scale*newScale);
+            focalPoint = translateToViewport(focalPoint);
+            Point newFocalPoint = new Point();
+            newFocalPoint.x = (int)((double)focalPoint.x/scale*newScale);
+            newFocalPoint.y = (int)((double)focalPoint.y/scale*newScale);
+            x += newFocalPoint.x - focalPoint.x;
+            y += newFocalPoint.y - focalPoint.y;
             scaleLevel = newLevel;
             scale = newScale;
             restrictViewportBounds();
         }
         /**
          * Translates the viewport by the specified coordinates
+         * @param dx The amount to translate in the X direction
+         * @param dy The amount to translate in the Y direction
          */
         public void translate(int dx, int dy) {
             x += dx;
@@ -239,6 +279,8 @@ public class Grid extends GameComponent {
         }
         /**
          * Moves the top left corner of the viewport to the specified coordinates
+         * @param newX The new X coordinate
+         * @param newY The new Y coordinate
          */
         public void moveTo(int newX, int newY) {
             x = newX;
@@ -247,15 +289,17 @@ public class Grid extends GameComponent {
         }
         /**
          * Increases the scale level by 1, causing the viewport to zoom in
+         * @param focalPoint The point that the zoom is centered on (ie the point that doesn't move).
          */
-        public void zoomIn() {
-            setScaleLevel(scaleLevel+1);
+        public void zoomIn(Point focalPoint) {
+            setScaleLevel(scaleLevel+1, focalPoint);
         }
         /**
          * Decreases the scale level by 1, causing the viewport to zoom out
+         * @param focalPoint The point that the zoom is centered on (ie the point that doesn't move).
          */
-        public void zoomOut() {
-            setScaleLevel(scaleLevel-1);
+        public void zoomOut(Point focalPoint) {
+            setScaleLevel(scaleLevel-1, focalPoint);
         }
         /**
          * Resizes and translates a rectangle to map it with the viewport
@@ -281,13 +325,9 @@ public class Grid extends GameComponent {
         public Line mapToViewport(Line line) {
             return new Line(mapToViewport(line.startPoint), line.direction, line.length*scale);
         }
-        /**
-         * Maps a distance to the viewport
-         * @param distance The provided distance
-         * @return The mapped distance
-         */
-        public int mapToViewport(int distance) {
-            return distance*scale;
+
+        public Point translateToViewport(Point point) {
+            return new Point(point.x + x, point.y + y);
         }
         /**
          * Checks whether or not a rectangle is visible in the viewport
@@ -304,6 +344,79 @@ public class Grid extends GameComponent {
          */
         public Point scaleToViewport(Point point) {
             return new Point(point.x*scale, point.y*scale);
+        }
+        /**
+         * Maps a coordinate on the viewport to the coordinates of the grid.
+         * @param point The point to map
+         * @return The mapped point
+         */
+        public Point mapToGrid(Point point) {
+            return new Point((x+point.x) / scale, (y+point.y) / scale);
+        }
+    }
+    
+    public static class User {
+        private static final int DEFAULT_STARTING_BALANCE = 100000;
+        private Grid grid;
+        private int balance;
+        private long lastTaxAccumulation;
+        private double accumulatedTax;
+
+        public User(Grid grid) {
+            this.grid = grid;
+            balance = DEFAULT_STARTING_BALANCE;
+            lastTaxAccumulation = System.currentTimeMillis();
+            accumulatedTax = 0;
+        }
+        /**
+         * Returns the balance of the user account.
+         */
+        public int getSimCoins() {
+            return balance;
+        }
+        /**
+         * Adds SimCoins to the balance.
+         */
+        public void addSimCoins(int amount) {
+            balance += amount;
+            System.out.println("balance was increased to " + balance);
+        }
+        /**
+         * Spends SimCoins, causing the balance to decrease.
+         * @param amount The amount to spend.
+         * @throws NotEnoughSimCoinsException If the amount spent exceeds the balance and cancels the transaction.
+         */
+        public void spendSimCoins(int amount) throws NotEnoughSimCoinsException {
+            if(amount > balance) {
+                throw new NotEnoughSimCoinsException();
+            } else {
+                balance -= amount;
+            }
+        }
+        /**
+         * Updates the amount of tax that can be collected.
+         */
+        public void accumulateTax() {
+            long currentTime = System.currentTimeMillis();
+            long timeElapsed = currentTime - lastTaxAccumulation;
+            accumulatedTax += (double)timeElapsed*ResidentialBuilding.getTaxRate(grid.buildings)/ResidentialBuilding.TAX_RATE_TIME_INVERVAL;
+            lastTaxAccumulation = currentTime;
+        }
+        /**
+         * Checks the number of SimCoins that can immediately be collected as tax.
+         * @return The number of SimCoins ready to be collected as tax.
+         */
+        public int checkCollectableTax() {
+            return (int)accumulatedTax;
+        }
+        /**
+         * Collects the SimCoins that can be collected as tax.
+         * @return The number of SimCoins to collect.
+         */
+        public int getCollectableTax() {
+            int tax = (int)accumulatedTax;
+            accumulatedTax -= tax;
+            return tax;
         }
     }
 }

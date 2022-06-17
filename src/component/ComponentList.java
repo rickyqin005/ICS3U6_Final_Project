@@ -3,12 +3,12 @@ package component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Graphics;
-import javax.swing.JButton;
+import javax.swing.JComponent;
 
-public class ButtonList extends GameComponent {
+public class ComponentList extends GameComponent {
     private String name;
     
-    public ButtonList(String name, JButton[] buttons, int[] direction) {
+    public ComponentList(String name, JComponent[] components, int[] direction, int weightx, int weighty) {
         this.name = name;
 
         this.setLayout(new GridBagLayout());
@@ -16,8 +16,10 @@ public class ButtonList extends GameComponent {
         gbc.anchor = GridBagConstraints.NORTH;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        for(JButton button: buttons) {
-            this.add(button, gbc);
+        gbc.weightx = weightx;
+        gbc.weighty = weighty;
+        for(JComponent component: components) {
+            this.add(component, gbc);
             gbc.gridx += direction[0];
             gbc.gridy += direction[1];
         }
@@ -35,5 +37,6 @@ public class ButtonList extends GameComponent {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g); //required
+        System.out.println("painted componentlist " + name);
     }
 }
