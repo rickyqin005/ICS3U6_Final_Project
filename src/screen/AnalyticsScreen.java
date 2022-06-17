@@ -23,4 +23,8 @@ public class AnalyticsScreen extends GameScreen {
     public void update() {
 
     }
+    @Override
+    public void exitScreen() {
+
+    }
 }

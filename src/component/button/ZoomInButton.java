@@ -7,10 +7,12 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
 import component.Grid;
+import component.Updatable;
 import images.ImagePath;
 
-public class ZoomInButton extends JButton {
+public class ZoomInButton extends JButton implements Updatable {
     private static final ImageIcon ICON = new ImageIcon(ImagePath.getIconPath("zoomin"));
+    private static final String NAME = "zoomInButton";
     public ZoomInButton(Grid grid) {
         super(ICON);
         this.addActionListener(new ActionListener() {
@@ -20,5 +22,12 @@ public class ZoomInButton extends JButton {
                 grid.getViewport().zoomIn(screenCenter);
             }
         });
+    }
+    @Override
+    public String getName() {
+        return NAME;
+    }
+    @Override
+    public void update() {
     }
 }

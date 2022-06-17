@@ -1,6 +1,6 @@
 package screen;
 
-import component.GameComponent;
+import component.Updatable;
 import core.Game;
 
 public abstract class GameScreen {
@@ -13,8 +13,8 @@ public abstract class GameScreen {
      * @param name The name of the component
      * @param ifNotFound The value to return if the requested GameComponent is not found
      */
-    public GameComponent getGameComponentByName(String name, GameComponent ifNotFound) {
-        GameComponent component = game.getGameComponentByName(name);
+    public Updatable getGameComponentByName(String name, Updatable ifNotFound) {
+        Updatable component = game.getGameComponentByName(name);
         if(component == null) {
             component = ifNotFound;
             game.addGameComponent(component);
@@ -22,4 +22,5 @@ public abstract class GameScreen {
         return component;
     }
     public abstract void update();
+    public abstract void exitScreen();
 }

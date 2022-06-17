@@ -11,6 +11,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import javax.swing.JPanel;
 
 import exception.NotEnoughSimCoinsException;
 import gameobject.building.*;
@@ -19,9 +20,9 @@ import utility.Direction;
 import utility.Line;
 import utility.Sprite;
 
-public class Grid extends GameComponent {
+public class Grid extends JPanel implements Updatable {
     public static final Dimension DEFAULT_DIMENSIONS = new Dimension(200, 200);
-    private String name;
+    public static final String NAME = "grid";
     private Dimension dimension;
     private Viewport viewport;
     private User user;
@@ -32,8 +33,7 @@ public class Grid extends GameComponent {
     private GridMouseMotionListener mouseMotionListener;
     private GridMouseWheelListener mouseWheelListener;
 
-    public Grid(String name) {
-        this.name = name;
+    public Grid() {
         dimension = Grid.DEFAULT_DIMENSIONS;
         viewport = new Viewport(this);
         user = new User(this);
@@ -54,7 +54,7 @@ public class Grid extends GameComponent {
         buildings.add(new ResidentialBuilding(this, new Point(0, 0), 1));
         buildings.add(new Amenity(this, new Rectangle(4, 4, 6, 4), 20000, Color.WHITE, "school"));
         buildings.add(new EmergencyServiceBuilding(this, new Rectangle(11, 4, 8, 6), 50000, Color.WHITE, "policestationlarge"));
-        roads.add(new Road(new Line(new Point(0, 3), Direction.RIGHT, 15), 2));
+        roads.add(new Road(new Line(new Point(0, 3), Direction.RIGHT, 25), 2));
         roads.add(new Road(new Line(new Point(3, 0), Direction.DOWN, 80), 2));
         roads.add(new Road(new Line(new Point(10, 0), Direction.DOWN, 80), 2));
 
@@ -82,7 +82,7 @@ public class Grid extends GameComponent {
 
     @Override
     public String getName() {
-        return name;
+        return NAME;
     }
     public Dimension getDimensions() {
         return this.dimension;
@@ -159,7 +159,7 @@ public class Grid extends GameComponent {
         }
 
         user.accumulateTax();
-        System.out.println("painted grid");
+        // System.out.println("painted grid");
     }
 
     public class GridMouseListener implements MouseListener {

@@ -1,8 +1,9 @@
 package component;
 
 import java.awt.Graphics;
+import javax.swing.JPanel;
 
-public class SlidingSelectionPanel extends GameComponent {
+public class SlidingSelectionPanel extends JPanel implements Updatable {
     private String name;
     public SlidingSelectionPanel(String name) {
         this.name = name;

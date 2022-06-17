@@ -4,9 +4,11 @@ import java.awt.Font;
 import javax.swing.JLabel;
 
 import component.Grid;
+import component.Updatable;
 import gameobject.building.ResidentialBuilding;
 
-public class PopulationLabel extends JLabel {
+public class PopulationLabel extends JLabel implements Updatable {
+    private static final String NAME = "populationLabel";
     private Grid grid;
     private Font font;
     public PopulationLabel(Grid grid, Font font) {
@@ -18,5 +20,14 @@ public class PopulationLabel extends JLabel {
     }
     public String populationToString() {
         return "Population: " + ResidentialBuilding.getTotalPopulation(grid.getBuildings());
+    }
+    @Override
+    public String getName() {
+        return NAME;
+    }
+    @Override
+    public void update() {
+        this.setText(populationToString());
+        repaint();
     }
 }

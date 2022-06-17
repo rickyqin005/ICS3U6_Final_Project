@@ -1,6 +1,9 @@
 package images;
 
 public class ImagePath {
+    public static String getImagePath(String name) {
+        return "src/images/" + name + ".png";
+    }
     public static String getImagePath(String name, int scale) {
         return "src/images/" + name + "_scale" + scale + ".png";
     }

@@ -2,14 +2,14 @@ package screen;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import javax.swing.JButton;
-
 
 import component.ComponentList;
 import component.Grid;
+import component.Updatable;
 import component.UserPanel;
 import component.button.*;
 import core.Game;
+import core.Game.GameState;
 import utility.Direction;
 
 public class GameplayScreen extends GameScreen {
@@ -21,11 +21,11 @@ public class GameplayScreen extends GameScreen {
         super(game);
 
         // retrieve the JPanels
-        grid = (Grid)getGameComponentByName("grid", new Grid("grid"));
+        grid = (Grid)getGameComponentByName(Grid.NAME, new Grid());
         userPanel = (UserPanel)getGameComponentByName("userPanel", new UserPanel("userPanel", grid));
 
-        final JButton[] buttons = {new SettingsButton(), new ZoomInButton(grid), new ZoomOutButton(grid), new RoadButton(), 
-            new BuildingButton(game), new AmenityButton(), new AnalyticsButton(game), new CollectTaxButton(grid)};
+        final Updatable[] buttons = {new ExitButton(game, GameState.MAIN_MENU), new SettingsButton(game), new ZoomInButton(grid), new ZoomOutButton(grid), new RoadButton(game), 
+            new BuildingButton(game), new AmenityButton(game), new AnalyticsButton(game), new CollectTaxButton(grid)};
         sideBar = (ComponentList)getGameComponentByName("sideBar", new ComponentList("sideBar", buttons, Direction.DOWN, 0, 0));
 
         // add the JPanels to the screen
@@ -62,8 +62,12 @@ public class GameplayScreen extends GameScreen {
     }
     public void update() {
         grid.update();
-        userPanel.repaint();
+        userPanel.update();
         sideBar.update();
-        System.out.println("updated gameplay screen");
+        // System.out.println("updated gameplay screen");
+    }
+    @Override
+    public void exitScreen() {
+        game.removeGameComponent(sideBar);
     }
 }

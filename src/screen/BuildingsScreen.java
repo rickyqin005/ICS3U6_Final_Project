@@ -18,7 +18,12 @@ public class BuildingsScreen extends GameScreen {
         super(game);
 
     }
+    @Override
     public void update() {
         
+    }
+    @Override
+    public void exitScreen() {
+
     }
 }

@@ -4,12 +4,15 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Graphics;
 import javax.swing.JComponent;
+import javax.swing.JPanel;
 
-public class ComponentList extends GameComponent {
+public class ComponentList extends JPanel implements Updatable {
     private String name;
+    private Updatable[] components;
     
-    public ComponentList(String name, JComponent[] components, int[] direction, int weightx, int weighty) {
+    public ComponentList(String name, Updatable[] components, int[] direction, int weightx, int weighty) {
         this.name = name;
+        this.components = components;
 
         this.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -18,8 +21,8 @@ public class ComponentList extends GameComponent {
         gbc.gridy = 0;
         gbc.weightx = weightx;
         gbc.weighty = weighty;
-        for(JComponent component: components) {
-            this.add(component, gbc);
+        for(Updatable component: this.components) {
+            this.add((JComponent)component, gbc);
             gbc.gridx += direction[0];
             gbc.gridy += direction[1];
         }
@@ -37,6 +40,9 @@ public class ComponentList extends GameComponent {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g); //required
-        System.out.println("painted componentlist " + name);
+        for(Updatable component: components) {
+            component.update();
+        }
+        //System.out.println("updated componentlist " + name);
     }
 }
