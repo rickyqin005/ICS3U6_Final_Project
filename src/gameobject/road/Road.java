@@ -45,6 +45,14 @@ public class Road {
         this.backgroundColor = DEFAULT_BACKGROUND_COLOR;
     }
 
+    public Road(RoadNetwork roadNetwork, Rectangle rect, int numLanes) {
+        this.roadNetwork = roadNetwork;
+        this.path = new Line(new Point(rect.x, rect.y), 
+                new Point(rect.x+rect.width-DEFAULT_THICKNESS, rect.y+rect.height-DEFAULT_THICKNESS));
+        this.numLanes = numLanes;
+        this.backgroundColor = DEFAULT_BACKGROUND_COLOR;
+    }
+
     /**
      * 
      * @param roadNetwork The road network the road is in.

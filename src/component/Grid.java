@@ -7,11 +7,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.io.File;
-import java.io.FileWriter;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javax.swing.JPanel;
@@ -36,8 +36,6 @@ public class Grid extends JPanel {
     private RoadNetwork roadNetwork;
     private File savedFile;
     private GridMouseListener gridMouseListener;
-    private Road pendingRoad;
-    private Road selectedRoad;
 
     public Grid(Game game) {
         this.game = game;
@@ -63,6 +61,8 @@ public class Grid extends JPanel {
     public void setState(int newState) {
         if(gridMouseListener instanceof BuildingsListener) {
             ((BuildingsListener)gridMouseListener).setSelected(null);
+        } else if(gridMouseListener instanceof RoadsListener) {
+            ((RoadsListener)gridMouseListener).setPending(null);
         }
 
         removeMouseListener(gridMouseListener);
@@ -161,10 +161,6 @@ public class Grid extends JPanel {
         return gridMouseListener;
     }
 
-    public Road getSelectedRoad() {
-        return selectedRoad;
-    }
-
     /**
      * Returns the file that the game is saved to.
      * @return The file the game is saved to, or null if there is no file.
@@ -212,7 +208,7 @@ public class Grid extends JPanel {
                     selectedBuilding.draw(g, viewport);
                 }
             } else if(gridMouseListener instanceof RoadsListener) {
-
+                Road pendingRoad = ((RoadsListener)gridMouseListener).getPending();
                 if(pendingRoad != null) {
                     pendingRoad.drawArea(g, viewport);
                     pendingRoad.drawOutline(g, viewport);
@@ -375,26 +371,29 @@ public class Grid extends JPanel {
     }
 
     public class RoadsListener extends GamePlayListener {
-        private Point startPoint;
+        private Road pending;
+        private Point pendingStart;
+
         @Override
         public void mouseClicked(MouseEvent e) {
-            if(pendingRoad == null) {
-                startPoint = viewport.mapToGrid(e.getPoint());
-                pendingRoad = new Road(roadNetwork, new Line(startPoint, Direction.RIGHT, 1));
-                pendingRoad.setValidityBackgroundColor();
+            if(pending == null) {
+                pendingStart = viewport.mapToGrid(e.getPoint());
+                pending = new Road(roadNetwork, new Line(pendingStart, Direction.RIGHT, 1));
+                pending.setValidityBackgroundColor();
             } else {
-                if(pendingRoad.isValidLocation()) {
-                    pendingRoad.setBackgroundColor(Road.DEFAULT_BACKGROUND_COLOR);
-                    addRoad(pendingRoad);
+                if(pending.isValidLocation()) {
+                    pending.setBackgroundColor(Road.DEFAULT_BACKGROUND_COLOR);
+                    addRoad(pending);
                 }
-                pendingRoad = null;
-                startPoint = null;
+                pending = null;
+                pendingStart = null;
             }
         }
+        
         @Override
         public void mouseMoved(MouseEvent e) {
-            if(pendingRoad != null && startPoint != null) {
-                Point startPointScreen = viewport.mapToViewport(startPoint);
+            if(pending != null && pendingStart != null) {
+                Point startPointScreen = viewport.mapToViewport(pendingStart);
                 Point currPointScreen = e.getPoint();
                 Point endPoint;
                 if(Math.abs(startPointScreen.x-currPointScreen.x) <= Math.abs(startPointScreen.y-currPointScreen.y)) {
@@ -402,9 +401,17 @@ public class Grid extends JPanel {
                 } else {
                     endPoint = viewport.mapToGrid(new Point(currPointScreen.x, startPointScreen.y));
                 }
-                pendingRoad = new Road(roadNetwork, new Line(startPoint, endPoint));
-                pendingRoad.setValidityBackgroundColor();
+                pending = new Road(roadNetwork, new Line(pendingStart, endPoint));
+                pending.setValidityBackgroundColor();
             }
+        }
+
+        public Road getPending() {
+            return pending;
+        }
+
+        public void setPending(Road road) {
+            pending = road;
         }
     }
 

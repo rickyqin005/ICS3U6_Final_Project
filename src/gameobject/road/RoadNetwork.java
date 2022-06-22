@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import component.Grid;
 import component.Grid.Viewport;
+import utility.Rectangles;
 
 public class RoadNetwork {
     private Grid grid;
@@ -20,13 +21,13 @@ public class RoadNetwork {
 
     private void calculateIntersectionPoints() {
         intersectionPoints.clear();
-        for(Road road1: roads) {
-            for(Road road2: roads) {
-                if(road1 != road2) {
-                    Point point = road1.getIntersectionPoint(road2);
-                    if(point != null) {
-                        intersectionPoints.add(point);
-                    }
+        for(int i = 0; i < roads.size(); i++) {
+            Road road1 = roads.get(i);
+            for(int j = i+1; j < roads.size(); j++) {
+                Road road2 = roads.get(j);
+                Point point = road1.getIntersectionPoint(road2);
+                if(point != null) {
+                    intersectionPoints.add(point);
                 }
             }
         }
@@ -36,7 +37,25 @@ public class RoadNetwork {
         return grid;
     }
     
+    /**
+     * Adds the specified road to the road network.
+     * @param road A reference to a road segment.
+     */
     public void addRoad(Road road) {
+
+        // merge the new road to an existing road if they are extensions of each other.
+        for(int idx = 0; idx < roads.size(); idx++) {
+            Road road2 = roads.get(idx);
+            if(road.getPath().isParallel(road2.getPath())) {
+                if(Rectangles.overlap(road.toRectangle(), road2.toRectangle()) && 
+                        road.getNumLanes() == road2.getNumLanes()) {
+                    road = new Road(this, road.toRectangle().union(road2.toRectangle()), road.getNumLanes());
+                    
+                    roads.remove(road2);
+                    idx--;
+                }
+            }
+        }
         roads.add(road);
         calculateIntersectionPoints();
     }
@@ -46,14 +65,12 @@ public class RoadNetwork {
      * @param road A reference to a road segment.
      */
     public void removeRoad(Road road) {
-        for(int i = 0; i < roads.size(); i++) {
-            if(roads.get(i) == road) {
-                roads.remove(i);
-                return;
-            }
-        }
+        roads.remove(road);
     }
     
+    /**
+     * Returns a list of all the road segments in this road network.
+     */
     public ArrayList<Road> getRoads() {
         return roads;
     }
