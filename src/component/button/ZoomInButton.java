@@ -7,14 +7,15 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
 import component.Grid;
-import component.Updatable;
-import images.ImagePath;
+import utility.Images;
+import utility.Text;
 
-public class ZoomInButton extends JButton implements Updatable {
-    private static final ImageIcon ICON = new ImageIcon(ImagePath.getIconPath("zoomin"));
+public class ZoomInButton extends JButton {
+    private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("zoomin"));
     private static final String NAME = "zoomInButton";
     public ZoomInButton(Grid grid) {
         super(ICON);
+        Text.formatJButton(this);
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -26,8 +27,5 @@ public class ZoomInButton extends JButton implements Updatable {
     @Override
     public String getName() {
         return NAME;
-    }
-    @Override
-    public void update() {
     }
 }

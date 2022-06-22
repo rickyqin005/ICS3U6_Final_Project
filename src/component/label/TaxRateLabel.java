@@ -1,33 +1,35 @@
 package component.label;
 
-import java.awt.Font;
+import java.awt.Graphics;
 import javax.swing.JLabel;
 
 import component.Grid;
-import component.Updatable;
 import gameobject.building.ResidentialBuilding;
+import utility.Currency;
+import utility.Text;
 
-public class TaxRateLabel extends JLabel implements Updatable {
+public class TaxRateLabel extends JLabel {
     private static final String NAME = "taxRateLabel";
     private Grid grid;
-    private Font font;
-    public TaxRateLabel(Grid grid, Font font) {
+    public TaxRateLabel(Grid grid) {
         super();
         this.grid = grid;
-        this.font = font;
         this.setText(taxRateToString());
-        this.setFont(this.font);
+        Text.formatJLabel(this);
     }
     public String taxRateToString() {
-        return "Tax Rate: " + ResidentialBuilding.getTaxRate(grid.getBuildings()) + " per " + ResidentialBuilding.TAX_RATE_TIME_UNIT;
+        return "Tax Rate: " + Currency.formatCurrencyAmount(ResidentialBuilding.getTaxRate(grid.getBuildings())) + " per " + ResidentialBuilding.TAX_RATE_TIME_UNIT;
     }
+
     @Override
     public String getName() {
         return NAME;
     }
+    
     @Override
-    public void update() {
-        this.setText(taxRateToString());
-        repaint();
+    public void paintComponent(Graphics g) {
+        setText(taxRateToString());
+
+        super.paintComponent(g);
     }
 }

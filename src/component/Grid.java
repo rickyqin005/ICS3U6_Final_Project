@@ -7,117 +7,181 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.io.File;
+import java.io.FileWriter;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Scanner;
 import javax.swing.JPanel;
 
-import exception.NotEnoughSimCoinsException;
+import core.Game;
+import core.Game.GameState;
+import exception.NotEnoughCurrencyException;
 import gameobject.building.*;
 import gameobject.road.*;
 import utility.Direction;
 import utility.Line;
-import utility.Sprite;
 
-public class Grid extends JPanel implements Updatable {
-    public static final Dimension DEFAULT_DIMENSIONS = new Dimension(200, 200);
+public class Grid extends JPanel {
+    private static final Dimension DEFAULT_DIMENSIONS = new Dimension(200, 200);
+    private static final Color DEFAULT_BACKGROUND_COLOR = Color.WHITE;
     public static final String NAME = "grid";
+    private Game game;
     private Dimension dimension;
     private Viewport viewport;
     private User user;
     private ArrayList<Building> buildings;
-    private ArrayList<Road> roads;
-    private MouseState mouseState;
-    private GridMouseListener mouseListener;
-    private GridMouseMotionListener mouseMotionListener;
-    private GridMouseWheelListener mouseWheelListener;
+    private RoadNetwork roadNetwork;
+    private File savedFile;
+    private GridMouseListener gridMouseListener;
+    private Road pendingRoad;
+    private Road selectedRoad;
 
-    public Grid() {
+    public Grid(Game game) {
+        this.game = game;
         dimension = Grid.DEFAULT_DIMENSIONS;
         viewport = new Viewport(this);
         user = new User(this);
         buildings = new ArrayList<Building>();
-        roads = new ArrayList<Road>();
-        mouseState = new MouseState();
-        mouseListener = new GridMouseListener(this);
-        addMouseListener(mouseListener);
-        mouseMotionListener = new GridMouseMotionListener();
-        addMouseMotionListener(mouseMotionListener);
-        mouseWheelListener = new GridMouseWheelListener();
-        addMouseWheelListener(mouseWheelListener);
+        roadNetwork = new RoadNetwork(this);
+        savedFile = null;
+    }
 
-        buildings.add(new ResidentialBuilding(this, new Point(0, 4), 4));
-        buildings.add(new ResidentialBuilding(this, new Point(0, 7), 3));
-        buildings.add(new ResidentialBuilding(this, new Point(7, 0), 0));
-        buildings.add(new ResidentialBuilding(this, new Point(4, 0), 2));
-        buildings.add(new ResidentialBuilding(this, new Point(0, 0), 1));
-        buildings.add(new Amenity(this, new Rectangle(4, 4, 6, 4), 20000, Color.WHITE, "school"));
-        buildings.add(new EmergencyServiceBuilding(this, new Rectangle(11, 4, 8, 6), 50000, Color.WHITE, "policestationlarge"));
-        roads.add(new Road(new Line(new Point(0, 3), Direction.RIGHT, 25), 2));
-        roads.add(new Road(new Line(new Point(3, 0), Direction.DOWN, 80), 2));
-        roads.add(new Road(new Line(new Point(10, 0), Direction.DOWN, 80), 2));
+    public Grid(Game game, File file) {
+        this.game = game;
+        dimension = Grid.DEFAULT_DIMENSIONS;
+        viewport = new Viewport(this);
+        user = new User(this);
+        buildings = new ArrayList<Building>();
+        roadNetwork = new RoadNetwork(this);
+        savedFile = file;
+        new GridFileReader(this);
+    }
 
-        /*for(int x = 1; x < dimension.width; x += 4) {
-            for(int y = 1; y < dimension.height; y += 4) {
-                double rand = Math.random();
-                if(rand < 0.1) {
-                    buildings.add(new ResidentialBuilding(this, new Rectangle(x, y, 3, 3), 5000, "house", 3));
-                } else if(rand < 0.2) {
-                    buildings.add(new ResidentialBuilding(this, new Rectangle(x, y, 3, 3), 5000, "house", 2));
-                } else if(rand < 0.5) {
-                    buildings.add(new ResidentialBuilding(this, new Rectangle(x, y, 3, 3), 5000, "house", 1));
-                } else {
-                    buildings.add(new ResidentialBuilding(this, new Rectangle(x, y, 3, 3), 5000, "house", 0));
-                }
-            }
+    public void setState(int newState) {
+        if(gridMouseListener instanceof BuildingsListener) {
+            ((BuildingsListener)gridMouseListener).setSelected(null);
         }
-        for(int x = 0; x < dimension.width; x += 4) {
-            roads.add(new Road(new Line(new Point(x, 0), Const.DOWN, dimension.height), 2));
+
+        removeMouseListener(gridMouseListener);
+        removeMouseMotionListener(gridMouseListener);
+        removeMouseWheelListener(gridMouseListener);
+
+        if(newState == GameState.BUILDINGS) {
+            gridMouseListener = new BuildingsListener(this);
+        } else if(newState == GameState.ROADS) {
+            gridMouseListener = new RoadsListener();
+        } else {
+            gridMouseListener = new GamePlayListener();
         }
-        for(int y = 0; y < dimension.height; y += 4) {
-            roads.add(new Road(new Line(new Point(0, y), Const.RIGHT, dimension.width), 2));
-        }*/
+        
+        addMouseListener(gridMouseListener);
+        addMouseMotionListener(gridMouseListener);
+        addMouseWheelListener(gridMouseListener);
+    }
+
+    public Rectangle toRectangle() {
+        return new Rectangle(new Point(0, 0), dimension);
+    }
+
+    public Point getCenter() {
+        return new Point(dimension.width/2, dimension.height/2);
     }
 
     @Override
     public String getName() {
         return NAME;
     }
+
     public Dimension getDimensions() {
         return this.dimension;
     }
+
     public Viewport getViewport() {
         return viewport;
     }
+
     public User getUser() {
         return user;
     }
+
     public ArrayList<Building> getBuildings() {
         return this.buildings;
     }
-    public void getBuilding(int id) {
+
+    /**
+     * Returns the building that occupies a specified cell.
+     * @param point The cell to check, expressed using its top left corner.
+     * @param buildings The list of buildings.
+     * @return The building that occupies that cell, or null if no buildings occupy that cell.
+     */
+    public Building getBuilding(Point point) {
+        Rectangle pointRect = new Rectangle(point.x, point.y, 1, 1);
+        for(Building building: buildings) {
+            if(building.getPlot().contains(pointRect)) {
+                return building;
+            }
+        }
+        return null;
     }
+
+    public boolean hasBuilding(Point point) {
+        return (getBuilding(point) != null);
+    }
+
     public void addBuilding(Building building) {
-        this.buildings.add(building);
+        try {
+            user.spendCurrency(building.getCost());
+            buildings.add(building);
+        } catch(NotEnoughCurrencyException e) {
+            e.showErrorMessage();
+        }
     }
-    public ArrayList<Road> getRoads() {
-        return this.roads;
+
+    public void demolishBuilding(Building building) {
+        buildings.remove(building);
     }
-    
-    @Override
-    public void update() {
-        repaint();
+
+    public RoadNetwork getRoadNetwork() {
+        return this.roadNetwork;
     }
+
+    public void addRoad(Road road) {
+        try {
+            user.spendCurrency(road.getCost());
+            roadNetwork.addRoad(road);
+        } catch(NotEnoughCurrencyException e) {
+            e.showErrorMessage();
+        }
+    }
+
+    public GridMouseListener getGridMouseListener() {
+        return gridMouseListener;
+    }
+
+    public Road getSelectedRoad() {
+        return selectedRoad;
+    }
+
+    /**
+     * Returns the file that the game is saved to.
+     * @return The file the game is saved to, or null if there is no file.
+     */
+    public File getSavedFile() {
+        return savedFile;
+    }
+
     @Override
     public void paintComponent(Graphics g) {
+        user.update();
+        
         super.paintComponent(g); //required
-        Dimension screenSize = super.getSize();
 
         // draw the background
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, screenSize.width, screenSize.height);
-
+        g.setColor(DEFAULT_BACKGROUND_COLOR);
+        g.fillRect(0, 0, this.getWidth(), this.getHeight());
 
         // draw the gridlines
         g.setColor(Color.LIGHT_GRAY);
@@ -129,79 +193,61 @@ public class Grid extends JPanel implements Updatable {
             g.drawLine(mappedGrid.x, currY, mappedGrid.x + mappedGrid.width, currY);
         }
 
+        roadNetwork.draw(g, viewport);
 
-        // draw the roads
-        g.setColor(Road.COLOR);
-        for(Road road: roads) {
-            Line path = road.getPath();
-            Rectangle rectPath = new Rectangle(path.startPoint.x, path.startPoint.y, path.direction[0]*path.length+1, path.direction[1]*path.length+1);
-            rectPath = viewport.mapToViewport(rectPath);
-            //System.out.println("(" + rectPath.x + ", " + rectPath.y + ") " + rectPath.width + " " + rectPath.height);
-            g.fillRect(rectPath.x, rectPath.y, rectPath.width, rectPath.height);
+        for(Building building: buildings) {
+            if(!building.isSelected()) {
+                building.draw(g, viewport);
+            }
+        }
+
+        if(gridMouseListener != null) {
+            if(gridMouseListener instanceof BuildingsListener) {
+                Building pendingBuilding = ((BuildingsListener)gridMouseListener).getPending();
+                Building selectedBuilding = ((BuildingsListener)gridMouseListener).getSelected();
+                if(pendingBuilding != null) {
+                    pendingBuilding.draw(g, viewport);
+                }
+                if(selectedBuilding != null) {
+                    selectedBuilding.draw(g, viewport);
+                }
+            } else if(gridMouseListener instanceof RoadsListener) {
+
+                if(pendingRoad != null) {
+                    pendingRoad.drawArea(g, viewport);
+                    pendingRoad.drawOutline(g, viewport);
+                }
+            }
         }
         
+        
+    }
 
-        // draw the buildings
-        for(Building building: buildings) {
-            Rectangle plot = viewport.mapToViewport(building.getPlot());
-            //System.out.println(plot);
-            if(viewport.isInViewport(plot)) {
-                g.setColor(building.getBackGround());
-                g.fillRect(plot.x, plot.y, plot.width, plot.height);
-                g.setColor(Color.BLACK);
-                g.drawRect(plot.x, plot.y, plot.width, plot.height);
-
-                Sprite picture = building.getPicture(viewport.getScaleLevel());
-                picture.setX(plot.x + (plot.width - picture.getWidth()) / 2);
-                picture.setY(plot.y + (plot.height - picture.getHeight()) / 2);
-                picture.draw(g);
+    public abstract class GridMouseListener implements MouseListener, MouseMotionListener, MouseWheelListener {}
+    public class GamePlayListener extends GridMouseListener {
+        public Point lastMouseDown;
+        public void mouseClicked(MouseEvent e) {
+            Point point = viewport.mapToGrid(e.getPoint());
+            if(hasBuilding(point)) {
+                game.setGameState(GameState.BUILDINGS, null);
+                ((BuildingsListener)gridMouseListener).setSelected(getBuilding(point));
             }
         }
-
-        user.accumulateTax();
-        // System.out.println("painted grid");
-    }
-
-    public class GridMouseListener implements MouseListener {
-        Grid grid;
-        public GridMouseListener(Grid grid) {
-            this.grid = grid;
-        }
-        public void mouseClicked(MouseEvent e) {
-            System.out.println("Mouse was clicked at (" + e.getX() + ", " + e.getY() + ")");
-            //System.out.println(viewport.mapToGrid(new Point(e.getX(), e.getY())));
-            //Point gridCoordinate = viewport.mapToGrid(new Point(e.getX(), e.getY()));
-            //buildings.add(new ResidentialBuilding(grid, new Point(gridCoordinate.x, gridCoordinate.y), 4));
-        }
-        public void mousePressed(MouseEvent e) {     
-            System.out.println("Mouse was pressed at (" + e.getX() + ", " + e.getY() + ")");
+        public void mousePressed(MouseEvent e) {
             Point mouseLocation = new Point(e.getX(), e.getY());
-            mouseState.lastMouseDown = mouseLocation;
+            lastMouseDown = mouseLocation;
         }
-        public void mouseReleased(MouseEvent e) {
-            System.out.println("Mouse was released at (" + e.getX() + ", " + e.getY() + ")");
-        }
-        public void mouseEntered(MouseEvent e) {
-            System.out.println("Mouse entered at (" + e.getX() + ", " + e.getY() + ")");
-        }
-        public void mouseExited(MouseEvent e) {
-            System.out.println("Mouse exited at (" + e.getX() + ", " + e.getY() + ")");
-        }
-    }
-    public class GridMouseMotionListener implements MouseMotionListener {
-        public void mouseMoved(MouseEvent e) {
-            //System.out.println("Mouse was moved to (" + e.getX() + ", " + e.getY() + ")");
-        }
+        public void mouseReleased(MouseEvent e) {}
+        public void mouseEntered(MouseEvent e) {}
+        public void mouseExited(MouseEvent e) {}
+        public void mouseMoved(MouseEvent e) {}
         public void mouseDragged(MouseEvent e) {
             Point mouseLoc = new Point(e.getX(), e.getY());
-            //System.out.println("Mouse was dragged to (" + e.getX() + ", " + e.getY() + ")");
-            if(!mouseLoc.equals(mouseState.lastMouseDown)) {
-                viewport.translate(-(mouseLoc.x-mouseState.lastMouseDown.x), -(mouseLoc.y-mouseState.lastMouseDown.y));
-                mouseState.lastMouseDown = mouseLoc;
+            if(!mouseLoc.equals(lastMouseDown)) {
+                viewport.translate(-(mouseLoc.x-lastMouseDown.x), -(mouseLoc.y-lastMouseDown.y));
+                lastMouseDown = mouseLoc;
             }
         }
-    }
-    public class GridMouseWheelListener implements MouseWheelListener {
         public void mouseWheelMoved(MouseWheelEvent e) {
             if(e.getPreciseWheelRotation() > 0) {
                 viewport.zoomOut(e.getPoint());
@@ -211,8 +257,155 @@ public class Grid extends JPanel implements Updatable {
         }
     }
 
-    public class MouseState {
-        public Point lastMouseDown;
+    public class BuildingsListener extends GamePlayListener {
+        private Grid grid;
+        private Building pending;
+        private Building selected;
+        private boolean selectedMovable;
+
+        public BuildingsListener(Grid grid) {
+            this.grid = grid;
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            Point point = viewport.mapToGrid(e.getPoint());
+            if(pending != null) {
+                confirmPending();
+                setPending(null);
+            } else {
+                if(selectedMovable) {
+                    if(selected.isValidLocation()) {
+                        selected.deselect();
+                        selected.moveTo(point);
+                    }
+                    setSelectedMovable(false);
+                }
+                setSelected(getBuilding(point));
+            }
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            Point point = viewport.mapToGrid(e.getPoint());
+            if(pending != null) {
+                pending.moveTo(point);
+                pending.setValidityBackgroundColor();
+            } else {
+                if(selected != null && getSelectedMovable()) {
+                    selected.moveTo(point);
+                    selected.setValidityBackgroundColor();
+                }
+            }
+        }
+
+        /**
+         * Tries to turn the pending building into an actual building.
+         * @return Whether or not the action was successful.
+         */
+        public boolean confirmPending() {
+            if(pending.isValidLocation()) {
+                pending.deselect();
+                addBuilding(pending);
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Returns the current pending building, or null if there is no pending building.
+         */
+        public Building getPending() {
+            return pending;
+        }
+
+        /**
+         * Sets the pending building to the specified building.
+         * If the specified building is null, the pending building is set to null.
+         * Note that only one of pending and selected can be non-null at any moment.
+         * @param template
+         */
+        public void setPending(TemplateBuilding template) {
+            if(pending != null) {
+                pending.deselect();
+            }
+            if(template == null) {
+                pending = null;
+            } else {
+                setSelected(null);
+                Point initialLocation = viewport.mapToGrid(new Point(Integer.MAX_VALUE,Integer.MAX_VALUE));
+                if(template instanceof TemplateResidentialBuilding) {
+                    pending = new ResidentialBuilding((TemplateResidentialBuilding)template, grid, initialLocation);
+                } else if(template instanceof TemplateAmenity) {
+                    pending = new Amenity((TemplateAmenity)template, grid, initialLocation);
+                }
+            }
+        }
+    
+        public Building getSelected() {
+            return selected;
+        }
+    
+        /**
+         * Sets the currently selected building to the specified building.
+         * If the specified building is null, then no building will be selected.
+         * @param newBuilding The specified building.
+         */
+        public void setSelected(Building newBuilding) {
+            if(selected != null) {
+                selected.deselect();
+            }
+            setSelectedMovable(false);
+            if(newBuilding == null) {
+                selected = null;
+            } else {
+                setPending(null);
+                selected = newBuilding;
+                selected.select();
+            }
+        }
+
+        public boolean getSelectedMovable() {
+            return selectedMovable;
+        }
+    
+        public void setSelectedMovable(boolean newVal) {
+            selectedMovable = newVal;
+        }
+    }
+
+    public class RoadsListener extends GamePlayListener {
+        private Point startPoint;
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            if(pendingRoad == null) {
+                startPoint = viewport.mapToGrid(e.getPoint());
+                pendingRoad = new Road(roadNetwork, new Line(startPoint, Direction.RIGHT, 1));
+                pendingRoad.setValidityBackgroundColor();
+            } else {
+                if(pendingRoad.isValidLocation()) {
+                    pendingRoad.setBackgroundColor(Road.DEFAULT_BACKGROUND_COLOR);
+                    addRoad(pendingRoad);
+                }
+                pendingRoad = null;
+                startPoint = null;
+            }
+        }
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            if(pendingRoad != null && startPoint != null) {
+                Point startPointScreen = viewport.mapToViewport(startPoint);
+                Point currPointScreen = e.getPoint();
+                Point endPoint;
+                if(Math.abs(startPointScreen.x-currPointScreen.x) <= Math.abs(startPointScreen.y-currPointScreen.y)) {
+                    endPoint = viewport.mapToGrid(new Point(startPointScreen.x, currPointScreen.y));
+                } else {
+                    endPoint = viewport.mapToGrid(new Point(currPointScreen.x, startPointScreen.y));
+                }
+                pendingRoad = new Road(roadNetwork, new Line(startPoint, endPoint));
+                pendingRoad.setValidityBackgroundColor();
+            }
+        }
     }
 
     public static class Viewport {
@@ -232,9 +425,8 @@ public class Grid extends JPanel implements Updatable {
         private int scale;
         public Viewport(Grid grid) {
             this.grid = grid;
-            x = 0;
-            y = 0;
             setScaleLevel(DEFAULT_SCALE_LEVEL, new Point(0,0));
+            this.moveTo(mapToViewport(grid.getCenter()));
         }
         private void restrictViewportBounds() {
             x = Math.max(x, 0);
@@ -287,6 +479,15 @@ public class Grid extends JPanel implements Updatable {
             y = newY;
             restrictViewportBounds();
         }
+
+        /**
+         * Moves the top left corner of the viewport to the specified coordinates.
+         * @param point The point to move the top left corner to.
+         */
+        public void moveTo(Point newPoint) {
+            moveTo(newPoint.x, newPoint.y);
+        }
+
         /**
          * Increases the scale level by 1, causing the viewport to zoom in
          * @param focalPoint The point that the zoom is centered on (ie the point that doesn't move).
@@ -301,6 +502,7 @@ public class Grid extends JPanel implements Updatable {
         public void zoomOut(Point focalPoint) {
             setScaleLevel(scaleLevel-1, focalPoint);
         }
+        
         /**
          * Resizes and translates a rectangle to map it with the viewport
          * @param rect The rectangle to be mapped
@@ -309,21 +511,29 @@ public class Grid extends JPanel implements Updatable {
         public Rectangle mapToViewport(Rectangle rect) {
             return new Rectangle(rect.x*scale - x, rect.y*scale - y, rect.width*scale, rect.height*scale);
         }
+
         /**
-         * Maps a point to the viewport
-         * @param point The point to be mapped
-         * @return The mapped point
+         * Maps a point to the viewport.
+         * @param point The point to be mapped.
          */
         public Point mapToViewport(Point point) {
             return new Point(point.x*scale - x, point.y*scale - y);
         }
+
         /**
          * Maps a line to the viewport
          * @param line The line to be mapped
-         * @return The mapped line
          */
         public Line mapToViewport(Line line) {
-            return new Line(mapToViewport(line.startPoint), line.direction, line.length*scale);
+            return new Line(mapToViewport(line.start), line.direction, line.distance*scale);
+        }
+
+        /**
+         * Maps a distance to the viewport
+         * @param distance The distance to be mapped
+         */
+        public int mapToViewport(int distance) {
+            return distance*scale;
         }
 
         public Point translateToViewport(Point point) {
@@ -368,31 +578,58 @@ public class Grid extends JPanel implements Updatable {
             lastTaxAccumulation = System.currentTimeMillis();
             accumulatedTax = 0;
         }
+
+        public User(Grid grid, int startingBalance, long lastTaxAccumulation, double accumulatedTax) {
+            this.grid = grid;
+            balance = startingBalance;
+            lastTaxAccumulation = System.currentTimeMillis();
+            accumulatedTax = 0;
+        }
+
+        /**
+         * @param grid The grid the user is playing in.
+         * @param args {startingBalance, lastTaxAccumulation, accumulatedTax}
+         */
+        public User(Grid grid, String[] args) {
+            this.grid = grid;
+            balance = Integer.parseInt(args[0]);
+            lastTaxAccumulation = Long.parseLong(args[1]);
+            accumulatedTax = Double.parseDouble(args[2]);
+        }
+
+        @Override
+        public String toString() {
+            return balance + "\t" + lastTaxAccumulation + "\t" + accumulatedTax;
+        }
+
         /**
          * Returns the balance of the user account.
          */
-        public int getSimCoins() {
+        public int getCurrency() {
             return balance;
         }
+
         /**
-         * Adds SimCoins to the balance.
+         * Adds currency to the balance.
          */
-        public void addSimCoins(int amount) {
+        public void addCurrency(int amount) {
             balance += amount;
             System.out.println("balance was increased to " + balance);
         }
+
         /**
-         * Spends SimCoins, causing the balance to decrease.
+         * Spends currency, causing the balance to decrease.
          * @param amount The amount to spend.
-         * @throws NotEnoughSimCoinsException If the amount spent exceeds the balance and cancels the transaction.
+         * @throws NotEnoughCurrencyException If the amount spent exceeds the balance and cancels the transaction.
          */
-        public void spendSimCoins(int amount) throws NotEnoughSimCoinsException {
+        public void spendCurrency(int amount) throws NotEnoughCurrencyException {
             if(amount > balance) {
-                throw new NotEnoughSimCoinsException();
+                throw new NotEnoughCurrencyException();
             } else {
                 balance -= amount;
             }
         }
+
         /**
          * Updates the amount of tax that can be collected.
          */
@@ -402,21 +639,106 @@ public class Grid extends JPanel implements Updatable {
             accumulatedTax += (double)timeElapsed*ResidentialBuilding.getTaxRate(grid.buildings)/ResidentialBuilding.TAX_RATE_TIME_INVERVAL;
             lastTaxAccumulation = currentTime;
         }
+
         /**
-         * Checks the number of SimCoins that can immediately be collected as tax.
-         * @return The number of SimCoins ready to be collected as tax.
+         * Checks the amount of currency that can immediately be collected as tax.
+         * @return The amount of currency ready to be collected as tax.
          */
         public int checkCollectableTax() {
             return (int)accumulatedTax;
         }
+
         /**
-         * Collects the SimCoins that can be collected as tax.
-         * @return The number of SimCoins to collect.
+         * Collects the currency that can be collected as tax.
+         * @return The amount of currency to collect.
          */
         public int getCollectableTax() {
             int tax = (int)accumulatedTax;
             accumulatedTax -= tax;
             return tax;
+        }
+
+        public void update() {
+            accumulateTax();
+        }
+    }
+
+    public static class GridFileConstants {
+        public static final String ARGS_DELIMITER = "\t";
+        public static final String END_OF_BUILDINGS = "........";
+        public static final String END_OF_ROADS = "............";
+    }
+    public class GridFileReader {
+        private Scanner fileReader;
+        public GridFileReader(Grid grid) {
+            try {
+                fileReader = new Scanner(savedFile);
+                boolean reachedEndOfBuildings = false;
+                boolean reachedEndOfRoads = false;
+
+                // read building data
+                while(!reachedEndOfBuildings) {
+                    String line = fileReader.nextLine();
+                    if(line.equals(GridFileConstants.END_OF_BUILDINGS)) {
+                        reachedEndOfBuildings = true;
+                    } else {
+                        String[] args = line.split(GridFileConstants.ARGS_DELIMITER);
+                        if(args[0].equals("ResidentialBuilding")) {
+                            buildings.add(new ResidentialBuilding(args, grid));
+                        } else if(args[0].equals("Amenity")) {
+                            buildings.add(new Amenity(args, grid));
+                        }
+                    }
+                }
+
+                // read road data
+                while(!reachedEndOfRoads) {
+                    String line = fileReader.nextLine();
+                    if(line.equals(GridFileConstants.END_OF_ROADS)) {
+                        reachedEndOfRoads = true;
+                    } else {
+                        String[] args = line.split(GridFileConstants.ARGS_DELIMITER);
+                        roadNetwork.addRoad(new Road(roadNetwork, args));
+                    }
+                }
+
+                // read user info
+                String[] args = fileReader.nextLine().split(GridFileConstants.ARGS_DELIMITER);
+                user = new User(grid, args);
+
+                fileReader.close();
+            } catch(Exception e) {}
+        }
+    }
+    
+    public class GridFileWriter {
+        private FileWriter fileWriter;
+        public GridFileWriter(File file) {
+            savedFile = file;
+            try {
+                fileWriter = new FileWriter(savedFile);
+
+                // write building data
+                for(Building building: buildings) {
+                    fileWriter.write(building.toString());
+                    fileWriter.write("\n");
+                }
+                fileWriter.write(GridFileConstants.END_OF_BUILDINGS);
+                fileWriter.write("\n");
+
+                // write road data
+                for(Road road: roadNetwork.getRoads()) {
+                    fileWriter.write(road.toString());
+                    fileWriter.write("\n");
+                }
+                fileWriter.write(GridFileConstants.END_OF_ROADS);
+                fileWriter.write("\n");
+
+                fileWriter.write(user.toString());
+                fileWriter.write("\n");
+
+                fileWriter.close();
+            } catch(Exception e) {}
         }
     }
 }

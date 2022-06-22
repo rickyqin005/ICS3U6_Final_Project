@@ -2,27 +2,32 @@ package screen;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import javax.swing.JComponent;
 
 import component.ComponentList;
 import component.PicturePanel;
-import component.Updatable;
 import component.button.LoadGameButton;
 import component.button.NewGameButton;
+import component.button.SettingsButton;
 import core.Game;
+import core.Game.GameState;
 import utility.Direction;
+import utility.Images;
+import utility.Sounds;
+import utility.providedtemplates.Music;
 
 public class MainMenuScreen extends GameScreen {
-    private PicturePanel logoPanel;
+    public static final int STATE = GameState.MAIN_MENU;
+    private final PicturePanel logoPanel = new PicturePanel("logoPanel", Images.getImagePath("gamelogo"));
     private ComponentList mainMenuButtonList;
-    public MainMenuScreen(Game game) {
-        super(game);
+    private Music backgroundMusic;
 
-        // Retrieve the JPanels
-        logoPanel = (PicturePanel)getGameComponentByName("logoPanel", new PicturePanel("logoPanel", "gamelogo"));
-        Updatable[] buttonList = {new NewGameButton(game), new LoadGameButton(game)};
-        mainMenuButtonList = (ComponentList)getGameComponentByName("mainMenuButtonList", 
-            new ComponentList("mainMenuButtonList", buttonList, Direction.RIGHT, 1, 1));
-        // add the JPanels to the screen
+    public MainMenuScreen(Game currGame) {
+        super(currGame);
+
+        final JComponent[] buttonList = {new SettingsButton(game), new NewGameButton(game), new LoadGameButton(game)};
+        mainMenuButtonList = new ComponentList("mainMenuButtonList", buttonList, Direction.RIGHT, 1, GridBagConstraints.CENTER, GridBagConstraints.NONE);
+        
         game.setLayout(new GridBagLayout());
         GridBagConstraints gbc;
 
@@ -32,8 +37,8 @@ public class MainMenuScreen extends GameScreen {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1;
-        gbc.weighty = 1;
-        game.add(logoPanel, gbc);
+        gbc.weighty = 3;
+        game.addGameComponent(logoPanel, gbc);
 
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.CENTER;
@@ -41,15 +46,33 @@ public class MainMenuScreen extends GameScreen {
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 1;
-        gbc.weighty = 0.5;
-        game.add(mainMenuButtonList, gbc);
+        gbc.weighty = 2;
+        game.addGameComponent(mainMenuButtonList, gbc);
+
+        backgroundMusic = Sounds.getMusic(Sounds.getAudioPath("backgroundmusic"));
+        backgroundMusic.start();
+        backgroundMusic.loop();
     }
-    public void update() {
-        logoPanel.update();
-        mainMenuButtonList.update();
-    }
+
     @Override
-    public void exitScreen() {
+    public int getState() {
+        return STATE;
+    }
+
+    @Override
+    public void updateState() {
+
+    }
+
+    @Override
+    public void updateGraphics() {
+        logoPanel.repaint();
+        mainMenuButtonList.repaint();
+    }
+
+    @Override
+    public void exitScreen(int newState) {
         game.removeGameComponent(logoPanel);
+        game.removeGameComponent(mainMenuButtonList);
     }
 }

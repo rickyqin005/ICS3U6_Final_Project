@@ -1,23 +1,26 @@
 package core;
 
-import java.util.ArrayList;
+import java.io.File;
+
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-import component.Updatable;
+import component.Grid;
 import screen.*;
 
 public class Game extends JFrame {
+    private static final String NAME = "SimCity";
+    public static final String FILE_EXTENSION = "simcity";
     private static final int FRAMES_PER_SECOND = 40;
-    private ArrayList<Updatable> gameComponents;
+    private Grid grid;
     private GameScreen currScreen;
-    public Game(String title, int width, int height) {
-        super(title);
+
+    public Game(int width, int height) {
+        super(NAME);
         super.setSize(width, height);
         super.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        gameComponents = new ArrayList<Updatable>();
-        setGameState(GameState.MAIN_MENU);
-        // setGameState(GameState.GAMEPLAY);
+
+        setGameState(GameState.MAIN_MENU, null);
 
         this.setVisible(true);
         this.startLoop();
@@ -29,13 +32,18 @@ public class Game extends JFrame {
         public static final int SETTINGS = 2;
         public static final int ROADS = 3;
         public static final int BUILDINGS = 4;
-        public static final int AMENITIES = 5;
-        public static final int ANALYTICS = 6;
+        public static final int ANALYTICS = 5;
     }
 
     private void startLoop() {
         while(true) {
-            currScreen.update();
+            if(currScreen != null) {
+                currScreen.updateState();
+            }
+            validate();
+            if(currScreen != null) {
+                currScreen.updateGraphics();
+            }
             // Delay to match the desired FPS
             try {
                 Thread.sleep(1000 / Game.FRAMES_PER_SECOND);
@@ -44,44 +52,61 @@ public class Game extends JFrame {
             }
         }
     }
-    public ArrayList<Updatable> getGameComponents() {
-        return gameComponents;
+
+    /**
+     * Adds the specified component to the screen.
+     * @param component The component to add.
+     * @param constraints The layout constraints.
+     */
+    public void addGameComponent(JComponent component, Object constraints) {
+        add(component, constraints);
+        System.out.println("Added " + component.getName() + " @" + component.hashCode());
     }
-    public Updatable getGameComponentByName(String name) {
-        for(Updatable component: gameComponents) {
-            if(component.getName().equals(name)) {
-                return component;
-            }
-        }
-        return null;
+
+    /**
+     * Removes the specified component from the screen.
+     * @param component The component to remove.
+     */
+    public void removeGameComponent(JComponent component) {
+        getContentPane().remove(component);
+        System.out.println("Removed " + component.getName() + " @" + component.hashCode());
     }
-    public void addGameComponent(Updatable component) {
-        gameComponents.add(component);
+
+    public Grid getGrid() {
+        return grid;
     }
-    public void removeGameComponent(Updatable component) {
-        for(int i = 0; i < gameComponents.size(); i++) {
-            if(gameComponents.get(i) == component) {
-                gameComponents.remove(i);
-                return;
-            }
-        }
+
+    public void setGrid(Grid newGrid) {
+        grid = newGrid;
     }
-    public void setGameState(int newState) {
+
+    public int getGameState() {
+        return currScreen.getState();
+    }
+    
+    public void setGameState(int newState, File savedGameFile) {
         if(currScreen != null) {
-            this.getContentPane().removeAll();
-            currScreen.exitScreen();
+            currScreen.exitScreen(newState);
         }
 
         if(newState == GameState.MAIN_MENU) {
             currScreen = new MainMenuScreen(this);
         } else if(newState == GameState.GAMEPLAY) {
-            currScreen = new GameplayScreen(this);
+            if(savedGameFile != null) {
+                currScreen = new GameplayScreen(this, savedGameFile);
+            } else {
+                currScreen = new GameplayScreen(this);
+            }
+        } else if(newState == GameState.SETTINGS) {
+            currScreen = new SettingsScreen(this, currScreen.getState());
+        } else if(newState == GameState.ROADS) {
+            currScreen = new AddRoadsScreen(this);
         } else if(newState == GameState.BUILDINGS) {
             currScreen = new BuildingsScreen(this);
         } else if(newState == GameState.ANALYTICS) {
             currScreen = new AnalyticsScreen(this);
         }
-        this.validate();
-        this.repaint();
+        validate();
+        repaint();
     }
 }

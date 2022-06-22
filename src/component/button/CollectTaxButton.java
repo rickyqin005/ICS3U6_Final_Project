@@ -6,26 +6,26 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
 import component.Grid;
-import component.Updatable;
-import images.ImagePath;
+import utility.Images;
+import utility.Text;
 
-public class CollectTaxButton extends JButton implements Updatable {
-    private static final ImageIcon ICON = new ImageIcon(ImagePath.getIconPath("collecttax"));
+public class CollectTaxButton extends JButton {
+    private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("collecttax"));
     private static final String NAME = "collectTaxButton";
+
     public CollectTaxButton(Grid grid) {
         super(ICON);
+        Text.formatJButton(this);
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                grid.getUser().addSimCoins(grid.getUser().getCollectableTax());
+                grid.getUser().addCurrency(grid.getUser().getCollectableTax());
             }
         });
     }
+    
     @Override
     public String getName() {
         return NAME;
-    }
-    @Override
-    public void update() {
     }
 }

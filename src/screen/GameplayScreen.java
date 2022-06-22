@@ -2,10 +2,12 @@ package screen;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.io.File;
+
+import javax.swing.JComponent;
 
 import component.ComponentList;
 import component.Grid;
-import component.Updatable;
 import component.UserPanel;
 import component.button.*;
 import core.Game;
@@ -13,22 +15,47 @@ import core.Game.GameState;
 import utility.Direction;
 
 public class GameplayScreen extends GameScreen {
-    private Grid grid;
+    public static final int STATE = GameState.GAMEPLAY;
     private UserPanel userPanel;
     private ComponentList sideBar;
 
-    public GameplayScreen(Game game) {
-        super(game);
+    private JComponent[] getButtons(Game game, Grid grid) {
+        return new JComponent[]{new SettingsButton(game), new ExitButton(game, GameState.MAIN_MENU, true), 
+            new ZoomInButton(grid), new ZoomOutButton(grid), new RoadButton(game), new BuildingButton(game), 
+            new AnalyticsButton(game), new CollectTaxButton(grid)};
+    }
+    
+    private ComponentList getSideBar(Game game, Grid grid) {
+        return new ComponentList("sideBar", getButtons(game, grid), Direction.DOWN, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE);
+    }
+    public GameplayScreen(Game currGame) {
+        super(currGame);
 
-        // retrieve the JPanels
-        grid = (Grid)getGameComponentByName(Grid.NAME, new Grid());
-        userPanel = (UserPanel)getGameComponentByName("userPanel", new UserPanel("userPanel", grid));
+        if(game.getGrid() == null) {
+            game.setGrid(new Grid(game));
+        }
+        game.getGrid().setState(STATE);
+        userPanel = new UserPanel(game.getGrid());
+        sideBar = getSideBar(game, game.getGrid());
 
-        final Updatable[] buttons = {new ExitButton(game, GameState.MAIN_MENU), new SettingsButton(game), new ZoomInButton(grid), new ZoomOutButton(grid), new RoadButton(game), 
-            new BuildingButton(game), new AmenityButton(game), new AnalyticsButton(game), new CollectTaxButton(grid)};
-        sideBar = (ComponentList)getGameComponentByName("sideBar", new ComponentList("sideBar", buttons, Direction.DOWN, 0, 0));
+        layoutComponents();
+    }
 
-        // add the JPanels to the screen
+    public GameplayScreen(Game currGame, File savedGameFile) {
+        super(currGame);
+
+        game.setGrid(new Grid(game, savedGameFile));
+        game.getGrid().setState(STATE);
+        userPanel = new UserPanel(game.getGrid());
+        sideBar = getSideBar(game, game.getGrid());
+
+        layoutComponents();
+    }
+
+    /**
+     * Adds the JComponents to the screen
+     */
+    private void layoutComponents() {
         game.setLayout(new GridBagLayout());
         GridBagConstraints gbc;
         
@@ -40,16 +67,15 @@ public class GameplayScreen extends GameScreen {
         gbc.gridwidth = 2;
         gbc.weightx = 0;
         gbc.weighty = 0;
-        game.add(userPanel, gbc);
+        game.addGameComponent(userPanel, gbc);
 
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTH;
-        gbc.fill = GridBagConstraints.BOTH;
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 0;
-        gbc.weighty = 1;
-        game.add(sideBar, gbc);
+        gbc.weighty = 0;
+        game.addGameComponent(sideBar, gbc);
         
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTH;
@@ -58,16 +84,38 @@ public class GameplayScreen extends GameScreen {
         gbc.gridy = 1;
         gbc.weightx = 1;
         gbc.weighty = 1;
-        game.add(grid, gbc);
+        game.addGameComponent(game.getGrid(), gbc);
     }
-    public void update() {
-        grid.update();
-        userPanel.update();
-        sideBar.update();
-        // System.out.println("updated gameplay screen");
-    }
+
     @Override
-    public void exitScreen() {
-        game.removeGameComponent(sideBar);
+    public int getState() {
+        return STATE;
     }
+
+    @Override
+    public void updateState() {
+
+    }
+
+    @Override
+    public void updateGraphics() {
+        if(game.getGrid() != null) {
+            game.getGrid().repaint();
+        }
+        userPanel.repaint();
+        sideBar.repaint();
+    }
+    
+    @Override
+    public void exitScreen(int newState) {
+        game.removeGameComponent(userPanel);
+        game.removeGameComponent(sideBar);
+        game.removeGameComponent(game.getGrid());
+        
+        if(newState == GameState.MAIN_MENU) {
+            game.setGrid(null);
+        }
+    }
+
+    
 }

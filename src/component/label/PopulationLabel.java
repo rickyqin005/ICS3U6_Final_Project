@@ -1,33 +1,34 @@
 package component.label;
 
-import java.awt.Font;
+import java.awt.Graphics;
 import javax.swing.JLabel;
 
 import component.Grid;
-import component.Updatable;
 import gameobject.building.ResidentialBuilding;
+import utility.Text;
 
-public class PopulationLabel extends JLabel implements Updatable {
+public class PopulationLabel extends JLabel {
     private static final String NAME = "populationLabel";
     private Grid grid;
-    private Font font;
-    public PopulationLabel(Grid grid, Font font) {
+    public PopulationLabel(Grid grid) {
         super();
         this.grid = grid;
-        this.font = font;
         this.setText(populationToString());
-        this.setFont(this.font);
+        Text.formatJLabel(this);
     }
     public String populationToString() {
         return "Population: " + ResidentialBuilding.getTotalPopulation(grid.getBuildings());
     }
+    
     @Override
     public String getName() {
         return NAME;
     }
+
     @Override
-    public void update() {
-        this.setText(populationToString());
-        repaint();
+    public void paintComponent(Graphics g) {
+        setText(populationToString());
+
+        super.paintComponent(g);
     }
 }

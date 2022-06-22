@@ -1,30 +1,83 @@
 package screen;
 
 import java.awt.GridBagLayout;
+import javax.swing.JComponent;
 import java.awt.GridBagConstraints;
-import javax.swing.JButton;
 
-import component.Grid;
 import component.UserPanel;
 import component.button.*;
 import component.ComponentList;
 import core.Game;
+import core.Game.GameState;
 import utility.Direction;
 
 public class AnalyticsScreen extends GameScreen {
-    private Grid grid;
+    public static final int STATE = GameState.ANALYTICS;
     private UserPanel userPanel;
-    private ComponentList sidebar;
+    private ComponentList sideBar;
     
-    public AnalyticsScreen(Game game) {
-        super(game);
+    public AnalyticsScreen(Game currGame) {
+        super(currGame);
+
+        game.getGrid().setState(STATE);
+        userPanel = new UserPanel(game.getGrid());
+
+        final JComponent[] buttons = {new SettingsButton(game), new ExitButton(game, GameState.GAMEPLAY, false), 
+                new ZoomInButton(game.getGrid()), new ZoomOutButton(game.getGrid())};
+        sideBar = new ComponentList("sideBar", buttons, Direction.DOWN, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE);
         
-    }
-    public void update() {
+        game.setLayout(new GridBagLayout());
+        GridBagConstraints gbc;
+        
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        game.addGameComponent(userPanel, gbc);
 
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        game.addGameComponent(sideBar, gbc);
+        
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        game.addGameComponent(game.getGrid(), gbc);
     }
+
     @Override
-    public void exitScreen() {
+    public int getState() {
+        return STATE;
+    }
+    
+    @Override
+    public void updateState() {
 
+    }
+
+    @Override
+    public void updateGraphics() {
+        game.getGrid().repaint();
+        userPanel.repaint();
+        sideBar.repaint();
+    }
+    
+    @Override
+    public void exitScreen(int newState) {
+        game.removeGameComponent(userPanel);
+        game.removeGameComponent(sideBar);
+        game.removeGameComponent(game.getGrid());
     }
 }

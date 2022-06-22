@@ -5,27 +5,25 @@ import java.awt.event.ActionListener;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
-import component.Updatable;
 import core.Game;
-import images.ImagePath;
+import utility.Images;
+import utility.Text;
 
-public class RoadButton extends JButton implements Updatable {
-    private static final ImageIcon ICON = new ImageIcon(ImagePath.getIconPath("road"));
+public class RoadButton extends JButton {
+    private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("road"));
     private static final String NAME = "roadButton";
     public RoadButton(Game game) {
         super(ICON);
+        Text.formatJButton(this);
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                game.setGameState(Game.GameState.ROADS);
+                game.setGameState(Game.GameState.ROADS, null);
             }
         });
     }
     @Override
     public String getName() {
         return NAME;
-    }
-    @Override
-    public void update() {
     }
 }

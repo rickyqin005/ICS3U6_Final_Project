@@ -5,27 +5,25 @@ import java.awt.event.ActionListener;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
-import component.Updatable;
 import core.Game;
-import images.ImagePath;
+import utility.Images;
+import utility.Text;
 
-public class AnalyticsButton extends JButton implements Updatable {
-    private static final ImageIcon ICON = new ImageIcon(ImagePath.getIconPath("analytics"));
+public class AnalyticsButton extends JButton {
+    private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("analytics"));
     private static final String NAME = "analyticsButton";
     public AnalyticsButton(Game game) {
         super(ICON);
+        Text.formatJButton(this);
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                game.setGameState(Game.GameState.ANALYTICS);
+                game.setGameState(Game.GameState.ANALYTICS, null);
             }
         });
     }
     @Override
     public String getName() {
         return NAME;
-    }
-    @Override
-    public void update() {
     }
 }
