@@ -5,26 +5,36 @@ import java.awt.GridBagConstraints;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 
 import component.ComponentList;
 import component.Grid;
+import component.button.UpgradeResidentialBuildingButton;
+import component.label.BuildingPopulationLabel;
+import core.Updatable;
+import exception.NotEnoughCurrencyException;
+import utility.Currency;
 import utility.Direction;
-import utility.Images;
 import utility.Random;
 import utility.Rectangles;
-import utility.Text;
 
 public class ResidentialBuilding extends Building {
+    public static final int STARTING_LEVEL = 0;
     public static final String[] NAME = {"Single Family Home", "Townhouse", "Multi-family Unit", "Apartment", "Condominium"};
     public static final int[] DEFAULT_UPGRADE_COST = {0, 2000, 6000, 15000, 30000};
-    private static final int MAX_LEVEL = NAME.length-1;
-    private static final int[][] BASE_POPULATION_RANGE = {{50, 60}, {200, 250}, {800, 1000}, {3000, 3600}, {15000, 18000}};
+    public static final int MAX_LEVEL = NAME.length-1;
+    public static final int[][] BASE_POPULATION_RANGE = {{50, 60}, {200, 250}, {800, 1000}, {3000, 3600}, {15000, 18000}};
     public static final Dimension DEFAULT_DIMENSIONS = new Dimension(3, 3);
-    public static final String DEFAULT_PICTURE_NAME = "house";
+    public static final String DEFAULT_PICTURE_NAME_PREFIX = "house";
     public static final int TAX_RATE_TIME_INVERVAL = 60*60*1000;
     public static final String TAX_RATE_TIME_UNIT = "hour";
+
+    public static void recalculatePopulationBoosts(ArrayList<Building> buildings) {
+        for(Building building: buildings) {
+            if(building instanceof ResidentialBuilding) {
+                ((ResidentialBuilding)building).calculatePopulationBoost();
+            }
+        }
+    }
 
     /**
      * Calculates the total population of a list of buildings.
@@ -55,24 +65,19 @@ public class ResidentialBuilding extends Building {
     private int basePopulation;
     private int populationBoost;
     
-    @Override
-    protected void loadPictures() {
-        for(int i = 0; i < this.pictures.length; i++) {
-            this.pictures[i] = Images.getSprite(Images.getImagePath(DEFAULT_PICTURE_NAME, Grid.Viewport.SCALES[i], level));
-        }
-    }
-    
     private void setLevel(int newLevel) {
         level = newLevel;
+        pictureName = DEFAULT_PICTURE_NAME_PREFIX + level;
         basePopulation = Random.randInt(BASE_POPULATION_RANGE[level][0], BASE_POPULATION_RANGE[level][1]);
-        loadPictures();
+        loadSprites();
+        loadIcon();
     }
 
-    private void calculatePopulationBoost() {
+    public void calculatePopulationBoost() {
         populationBoost = 0;
         for(Building amenity: grid.getBuildings()) {
             if(amenity instanceof Amenity) {
-                if(Rectangles.overlap(this.plot, amenity.plot)) {
+                if(Rectangles.overlap(this.plot, ((Amenity)amenity).getBoostRegion())) {
                     populationBoost += ((Amenity)amenity).getBoost();
                 }
             }
@@ -84,7 +89,7 @@ public class ResidentialBuilding extends Building {
      * @param location The top left corner of the building.
      */
     public ResidentialBuilding(Grid grid, Point location) {
-        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME);
+        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME_PREFIX + STARTING_LEVEL);
 
         setLevel(0);
         calculatePopulationBoost();
@@ -96,7 +101,7 @@ public class ResidentialBuilding extends Building {
      * @param level The level of the building.
      */
     public ResidentialBuilding(Grid grid, Point location, int level) {
-        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME);
+        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME_PREFIX + STARTING_LEVEL);
 
         setLevel(level);
         calculatePopulationBoost();
@@ -108,7 +113,7 @@ public class ResidentialBuilding extends Building {
      * @param location The top left corner of the building.
      */
     public ResidentialBuilding(TemplateResidentialBuilding template, Grid grid, Point location) {
-        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME);
+        super(grid, "", new Rectangle(location, DEFAULT_DIMENSIONS), 0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME_PREFIX + STARTING_LEVEL);
 
         setLevel(0);
         calculatePopulationBoost();
@@ -121,7 +126,7 @@ public class ResidentialBuilding extends Building {
     public ResidentialBuilding(String[] args, Grid grid) {
         super(grid, "", 
                 new Rectangle(new Point(Integer.parseInt(args[1]), Integer.parseInt(args[2])), DEFAULT_DIMENSIONS), 
-                0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME);
+                0, DEFAULT_BACKGROUND_COLOR, DEFAULT_PICTURE_NAME_PREFIX + STARTING_LEVEL);
         
         setLevel(Integer.parseInt(args[3]));
         setBasePopulation(Integer.parseInt(args[4]));
@@ -129,20 +134,32 @@ public class ResidentialBuilding extends Building {
     }
 
     @Override
-    public JComponent[] toInfoComponents(Grid grid) {
-        JComponent[] superComponentList = super.toInfoComponents(grid);
-        ((JLabel)superComponentList[0]).setText(getName());
+    public Updatable[] toInfoComponents(Grid grid) {
+        Updatable[] superComponentList = super.toInfoComponents(grid);
 
-        JLabel buildingPopulation = new JLabel("Population: " + Integer.toString(getPopulation()));
-        Text.formatJLabel(buildingPopulation);
+        BuildingPopulationLabel buildingPopulation = new BuildingPopulationLabel(this);
 
-        return new JComponent[]{superComponentList[0], superComponentList[1], buildingPopulation};
+        return new Updatable[]{superComponentList[0], superComponentList[1], buildingPopulation};
     }
 
     @Override
     public ComponentList toInfoComponentList(Grid grid) {
         return new ComponentList("residentialBuildingInfoPanel", toInfoComponents(grid), Direction.DOWN, 
         new int[] {1, 5, 1}, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+    }
+
+    @Override
+    public Updatable[] toActionComponents() {
+        Updatable[] superComponentList = super.toActionComponents();
+        UpgradeResidentialBuildingButton buildingUpgrade = new UpgradeResidentialBuildingButton(this);
+
+        return new Updatable[] {superComponentList[0], superComponentList[1], buildingUpgrade};
+    }
+
+    @Override
+    public ComponentList toActionComponentList(Grid grid) {
+        return new ComponentList("buildingActionComponentList", toActionComponents(), Direction.DOWN, 
+        1, GridBagConstraints.CENTER, GridBagConstraints.NONE);
     }
 
     @Override
@@ -170,7 +187,7 @@ public class ResidentialBuilding extends Building {
      * Returns the true population of the building. Since the true population can change frequently, it is calculated when this method is called.
      */
     public int getPopulation() {
-        return (int)(basePopulation * (1.0 + (double)populationBoost/100));
+        return (int)Math.round(basePopulation * (1.0 + (double)populationBoost/100));
     }
 
     /**
@@ -197,15 +214,24 @@ public class ResidentialBuilding extends Building {
      * Returns the cost of upgrading the residential building to the next level.
      */
     public int getUpgradeCost() {
+        if(level == MAX_LEVEL) {
+            return -1;
+        }
         return DEFAULT_UPGRADE_COST[level+1];
+    }
+
+    public String getUpgradeCostToString() {
+        return Currency.formatCurrencyAmount(getUpgradeCost());
     }
 
     /**
      * Upgrades the current building, causing the level to increase by 1.
      */
-    public void upgradeBuilding() {
+    public void upgrade() throws NotEnoughCurrencyException {
         if(level < MAX_LEVEL) {
-            setLevel(level+1);
+                int newLevel = level+1;
+                grid.getUser().spendCurrency(DEFAULT_UPGRADE_COST[newLevel]);
+                setLevel(newLevel);
         }
     }
 
@@ -214,5 +240,4 @@ public class ResidentialBuilding extends Building {
         super.moveTo(newLocation);
         calculatePopulationBoost();
     }
-
 }

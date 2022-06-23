@@ -6,22 +6,19 @@ import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.Point;
 import java.awt.Rectangle;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 
 import component.ComponentList;
 import component.Grid;
-import component.PicturePanel;
 import component.Grid.Viewport;
 import component.button.DemolishBuildingButton;
 import component.button.MoveBuildingButton;
+import core.Updatable;
 import gameobject.road.Road;
 import gameobject.road.RoadNetwork;
 import utility.Direction;
 import utility.Images;
 import utility.Line;
 import utility.Rectangles;
-import utility.Text;
 import utility.providedtemplates.Sprite;
 
 public abstract class Building extends TemplateBuilding {
@@ -36,7 +33,7 @@ public abstract class Building extends TemplateBuilding {
     protected Sprite[] pictures = new Sprite[Grid.Viewport.SCALES.length];
     protected boolean isSelected;
 
-    protected void loadPictures() {
+    protected void loadSprites() {
         for(int i = 0; i < this.getPictures().length; i++) {
             pictures[i] = Images.getSprite(Images.getImagePath(pictureName, Grid.Viewport.SCALES[i]));
         }
@@ -46,7 +43,7 @@ public abstract class Building extends TemplateBuilding {
         super(name, plot, cost, pictureName);
         this.grid = grid;
         this.backgroundColor = backgroundColor;
-        loadPictures();
+        loadSprites();
         isSelected = false;
     }
 
@@ -54,7 +51,7 @@ public abstract class Building extends TemplateBuilding {
         super(template.name, new Rectangle(location, template.getDimensions()), template.cost, template.pictureName);
         this.grid = grid;
         this.backgroundColor = backgroundColor;
-        loadPictures();
+        loadSprites();
         isSelected = false;
     }
 
@@ -124,13 +121,10 @@ public abstract class Building extends TemplateBuilding {
     }
 
     @Override
-    public JComponent[] toInfoComponents(Grid grid) {
-        JLabel buildingName = new JLabel(getName());
-        Text.formatJLabel(buildingName);
+    public Updatable[] toInfoComponents(Grid grid) {
+        Updatable[] superInfoComponents = super.toInfoComponents(grid);
 
-        PicturePanel buildingPicture = new PicturePanel("buildingPicture", Images.getImagePath(pictureName));
-
-        return new JComponent[] {buildingName, buildingPicture};
+        return new Updatable[] {superInfoComponents[0], superInfoComponents[1]};
     }
 
     @Override
@@ -139,14 +133,12 @@ public abstract class Building extends TemplateBuilding {
         new int[] {1, 5}, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
     }
 
-    public JComponent[] toActionComponents() {
+    public Updatable[] toActionComponents() {
         MoveBuildingButton buildingMove = new MoveBuildingButton(grid, this);
-        Text.formatJButton(buildingMove);
 
         DemolishBuildingButton buildingDemolish = new DemolishBuildingButton(grid, this);
-        Text.formatJButton(buildingDemolish);
 
-        return new JComponent[] {buildingMove, buildingDemolish};
+        return new Updatable[] {buildingMove, buildingDemolish};
     }
 
     public ComponentList toActionComponentList(Grid grid) {

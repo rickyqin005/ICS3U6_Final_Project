@@ -14,7 +14,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
-import javax.swing.JPanel;
 
 import core.Game;
 import core.Game.GameState;
@@ -24,7 +23,7 @@ import gameobject.road.*;
 import utility.Direction;
 import utility.Line;
 
-public class Grid extends JPanel {
+public class Grid extends GamePanel {
     private static final Dimension DEFAULT_DIMENSIONS = new Dimension(200, 200);
     private static final Color DEFAULT_BACKGROUND_COLOR = Color.WHITE;
     public static final String NAME = "grid";
@@ -135,6 +134,9 @@ public class Grid extends JPanel {
         try {
             user.spendCurrency(building.getCost());
             buildings.add(building);
+            if(building instanceof Amenity) {
+                ResidentialBuilding.recalculatePopulationBoosts(buildings);
+            }
         } catch(NotEnoughCurrencyException e) {
             e.showErrorMessage();
         }
@@ -142,6 +144,9 @@ public class Grid extends JPanel {
 
     public void demolishBuilding(Building building) {
         buildings.remove(building);
+        if(building instanceof Amenity) {
+            ResidentialBuilding.recalculatePopulationBoosts(buildings);
+        }
     }
 
     public RoadNetwork getRoadNetwork() {
@@ -170,9 +175,13 @@ public class Grid extends JPanel {
     }
 
     @Override
-    public void paintComponent(Graphics g) {
+    public void update() {
         user.update();
-        
+        repaint();
+    }
+    
+    @Override
+    public void paintComponent(Graphics g) {
         super.paintComponent(g); //required
 
         // draw the background
@@ -257,6 +266,7 @@ public class Grid extends JPanel {
         private Grid grid;
         private Building pending;
         private Building selected;
+        private Point selectedOriginalLocation;
         private boolean selectedMovable;
 
         public BuildingsListener(Grid grid) {
@@ -272,12 +282,15 @@ public class Grid extends JPanel {
             } else {
                 if(selectedMovable) {
                     if(selected.isValidLocation()) {
-                        selected.deselect();
                         selected.moveTo(point);
+                    } else {
+                        selected.moveTo(selectedOriginalLocation);
                     }
-                    setSelectedMovable(false);
+                    selected.deselect();
+                    setSelected(null);
+                } else {
+                    setSelected(getBuilding(point));
                 }
-                setSelected(getBuilding(point));
             }
         }
 
@@ -319,7 +332,6 @@ public class Grid extends JPanel {
          * Sets the pending building to the specified building.
          * If the specified building is null, the pending building is set to null.
          * Note that only one of pending and selected can be non-null at any moment.
-         * @param template
          */
         public void setPending(TemplateBuilding template) {
             if(pending != null) {
@@ -329,6 +341,7 @@ public class Grid extends JPanel {
                 pending = null;
             } else {
                 setSelected(null);
+                setSelectedMovable(false);
                 Point initialLocation = viewport.mapToGrid(new Point(Integer.MAX_VALUE,Integer.MAX_VALUE));
                 if(template instanceof TemplateResidentialBuilding) {
                     pending = new ResidentialBuilding((TemplateResidentialBuilding)template, grid, initialLocation);
@@ -343,9 +356,9 @@ public class Grid extends JPanel {
         }
     
         /**
-         * Sets the currently selected building to the specified building.
-         * If the specified building is null, then no building will be selected.
-         * @param newBuilding The specified building.
+         * Sets the selected building to the specified building.
+         * If the specified building is null, the selected building is set to null.
+         * Note that only one of pending and selected can be non-null at any moment.
          */
         public void setSelected(Building newBuilding) {
             if(selected != null) {
@@ -367,6 +380,11 @@ public class Grid extends JPanel {
     
         public void setSelectedMovable(boolean newVal) {
             selectedMovable = newVal;
+            if(selectedMovable) {
+                selectedOriginalLocation = getSelected().getLocation();
+            } else {
+                selectedOriginalLocation = null;
+            }
         }
     }
 

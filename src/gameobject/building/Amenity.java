@@ -4,18 +4,25 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.Point;
 import java.awt.Rectangle;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 
 import component.ComponentList;
 import component.Grid;
+import component.label.BuildingBoostLabel;
+import core.Updatable;
 import utility.Direction;
-import utility.Text;
 
 public class Amenity extends Building {
     private TemplateAmenity template;
     private int boost;
     private Dimension boostDimensions;
+
+    private void calculatePopulationBoost() {
+        for(Building building: grid.getBuildings()) {
+            if(building instanceof ResidentialBuilding) {
+                ((ResidentialBuilding)building).calculatePopulationBoost();
+            }
+        }
+    }
 
     public Amenity(TemplateAmenity template, Grid grid, Point location) {
         super(grid, template.getName(), new Rectangle(location, template.getDimensions()), template.getCost(), 
@@ -23,6 +30,7 @@ public class Amenity extends Building {
         this.template = template;
         boost = template.getBoost();
         boostDimensions = template.getBoostDimensions();
+        calculatePopulationBoost();
     }
 
     /**
@@ -37,16 +45,16 @@ public class Amenity extends Building {
         this.template = TemplateAmenity.getTemplate(args[1]);
         boost = template.getBoost();
         boostDimensions = TemplateAmenity.getTemplate(args[1]).getBoostDimensions();
+        calculatePopulationBoost();
     }
 
     @Override
-    public JComponent[] toInfoComponents(Grid grid) {
-        JComponent[] superComponentList = super.toInfoComponents(grid);
+    public Updatable[] toInfoComponents(Grid grid) {
+        Updatable[] superComponentList = super.toInfoComponents(grid);
 
-        JLabel buildingBoost = new JLabel(boostToString() + ", " + boostDimensionsToString());
-        Text.formatJLabel(buildingBoost);
+        BuildingBoostLabel buildingBoost = new BuildingBoostLabel(template);
 
-        return new JComponent[] {superComponentList[0], superComponentList[1], buildingBoost};
+        return new Updatable[] {superComponentList[0], superComponentList[1], buildingBoost};
     }
 
     @Override
@@ -68,6 +76,11 @@ public class Amenity extends Building {
         return boostDimensions;
     }
 
+    public Rectangle getBoostRegion() {
+        return new Rectangle(plot.x + plot.width/2 - boostDimensions.width/2, plot.y + plot.height/2 - boostDimensions.height/2, 
+                plot.width + boostDimensions.width, plot.height + boostDimensions.height);
+    }
+
     public String boostToString() {
         return "+" + boost + "%";
     }
@@ -86,5 +99,11 @@ public class Amenity extends Building {
         } else {
             setBackgroundColor(Amenity.INVALID_LOCATION_BACKGROUND_COLOR);
         }
+    }
+
+    @Override
+    public void moveTo(Point newLocation) {
+        super.moveTo(newLocation);
+        ResidentialBuilding.recalculatePopulationBoosts(grid.getBuildings());
     }
 }

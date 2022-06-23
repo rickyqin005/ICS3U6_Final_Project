@@ -6,19 +6,21 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-
 import component.ComponentList;
 import component.Grid;
+import component.label.BuildingBoostLabel;
+import core.Updatable;
 import utility.Direction;
-import utility.Text;
 
 public class TemplateAmenity extends TemplateBuilding {
     public static final ArrayList<TemplateAmenity> TEMPLATES = new ArrayList<TemplateAmenity>(Arrays.asList(
-        new TemplateAmenity("Public School", new Rectangle(new Dimension(6, 4)), new Dimension(16, 12), 12000, "school", 25),
-        new TemplateAmenity("Parkette", new Rectangle(new Dimension(2, 3)), new Dimension(10, 15), 5000, "parkette", 10),
-        new TemplateAmenity("Police Station", new Rectangle(new Dimension(8,6)), new Dimension(20, 20), 20000, "policestationlarge", 20)
+        new TemplateAmenity("Public School", new Rectangle(new Dimension(6, 4)), new Dimension(24, 18), 12000, "school", 25),
+        new TemplateAmenity("Parkette", new Rectangle(new Dimension(2, 3)), new Dimension(12, 15), 5000, "parkette", 10),
+        new TemplateAmenity("Park With Pond", new Rectangle(new Dimension(4, 3)), new Dimension(20, 12), 10000, "parkwithpond", 15),
+        new TemplateAmenity("Police Station", new Rectangle(new Dimension(8, 6)), new Dimension(30, 30), 20000, "policestation", 20),
+        new TemplateAmenity("Fire Station", new Rectangle(new Dimension(9, 5)), new Dimension(27, 21), 20000, "firestation", 20),
+        new TemplateAmenity("Hospital", new Rectangle(new Dimension(8, 6)), new Dimension(30, 30), 25000, "hospital", 25),
+        new TemplateAmenity("University", new Rectangle(new Dimension(9, 8)), new Dimension(45, 40), 40000, "university", 30)
     ));
 
     public static TemplateAmenity getTemplate(String name) {
@@ -56,13 +58,12 @@ public class TemplateAmenity extends TemplateBuilding {
     }
 
     @Override
-    protected JComponent[] toInfoComponents(Grid grid) {
-        JComponent[] superComponentList = super.toInfoComponents(grid);
+    protected Updatable[] toInfoComponents(Grid grid) {
+        Updatable[] superComponentList = super.toInfoComponents(grid);
 
-        JLabel buildingBoost = new JLabel(boostToString() + ", " + boostDimensionsToString());
-        Text.formatJLabel(buildingBoost);
+        BuildingBoostLabel buildingBoost = new BuildingBoostLabel(this);
 
-        return new JComponent[] {
+        return new Updatable[] {
                 superComponentList[0], superComponentList[1], buildingBoost, superComponentList[2]};
     }
 

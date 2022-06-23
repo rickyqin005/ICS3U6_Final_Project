@@ -3,13 +3,13 @@ package screen;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
-import javax.swing.JComponent;
 
 import component.ComponentList;
 import component.ModifyBuildingsPanel;
 import component.UserPanel;
 import component.button.*;
 import core.Game;
+import core.Updatable;
 import core.Game.GameState;
 import gameobject.building.TemplateAmenity;
 import gameobject.building.TemplateBuilding;
@@ -28,8 +28,8 @@ public class BuildingsScreen extends GameScreen {
         game.getGrid().setState(STATE);
         userPanel = new UserPanel(game.getGrid());
 
-        final JComponent[] buttons = {new SettingsButton(game), new ExitButton(game, GameState.GAMEPLAY, false), 
-                new ZoomInButton(game.getGrid()), new ZoomOutButton(game.getGrid())};
+        final Updatable[] buttons = {new ExitButton(game, GameState.GAMEPLAY, false), 
+                new ZoomInButton(game.getGrid()), new ZoomOutButton(game.getGrid()), new CollectTaxButton(game.getGrid())};
         sideBar = new ComponentList("sideBar", buttons, Direction.DOWN, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE);
         
         final ArrayList<TemplateBuilding> buildingList = new ArrayList<TemplateBuilding>();
@@ -48,7 +48,7 @@ public class BuildingsScreen extends GameScreen {
         gbc.gridwidth = 2;
         gbc.weightx = 0;
         gbc.weighty = 0;
-        game.addGameComponent(userPanel, gbc);
+        game.addToJFrame(userPanel, gbc);
 
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTH;
@@ -56,7 +56,7 @@ public class BuildingsScreen extends GameScreen {
         gbc.gridy = 1;
         gbc.weightx = 0;
         gbc.weighty = 0;
-        game.addGameComponent(sideBar, gbc);
+        game.addToJFrame(sideBar, gbc);
         
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTH;
@@ -65,8 +65,8 @@ public class BuildingsScreen extends GameScreen {
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 1;
-        gbc.weighty = 2;
-        game.addGameComponent(game.getGrid(), gbc);
+        gbc.weighty = 6;
+        game.addToJFrame(game.getGrid(), gbc);
 
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTH;
@@ -76,31 +76,27 @@ public class BuildingsScreen extends GameScreen {
         gbc.gridwidth = 2;
         gbc.weightx = 1;
         gbc.weighty = 1;
-        game.addGameComponent(buildingSelection, gbc);
+        game.addToJFrame(buildingSelection, gbc);
     }
 
     @Override
     public int getState() {
         return STATE;
     }
-    
-    @Override
-    public void updateState() {
-    }
 
     @Override
-    public void updateGraphics() {
-        game.getGrid().repaint();
-        userPanel.repaint();
-        sideBar.repaint();
-        buildingSelection.repaint();
+    public void update() {
+        game.getGrid().update();
+        userPanel.update();
+        sideBar.update();
+        buildingSelection.update();
     }
     
     @Override
     public void exitScreen(int newState) {
-        game.removeGameComponent(userPanel);
-        game.removeGameComponent(sideBar);
-        game.removeGameComponent(game.getGrid());
-        game.removeGameComponent(buildingSelection);
+        game.removeFromJFrame(userPanel);
+        game.removeFromJFrame(sideBar);
+        game.removeFromJFrame(game.getGrid());
+        game.removeFromJFrame(buildingSelection);
     }
 }

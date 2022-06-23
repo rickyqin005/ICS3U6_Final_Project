@@ -4,31 +4,35 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.Rectangle;
 
-import javax.swing.JComponent;
-import javax.swing.JLabel;
+import javax.swing.ImageIcon;
 
 import component.ComponentList;
 import component.Grid;
-import component.PicturePanel;
 import component.button.AddBuildingButton;
+import component.label.BuildingNameLabel;
+import component.label.BuildingPictureLabel;
+import core.Updatable;
 import utility.Direction;
 import utility.Images;
-import utility.Text;
-import utility.providedtemplates.Sprite;
 
 public abstract class TemplateBuilding {
+    public static final int DEFAULT_PICTURE_SCALE_LEVEL = 1;
     protected String name;
     protected Rectangle plot;
     protected int cost;
     protected String pictureName;
-    protected Sprite picture;
+    protected ImageIcon pictureIcon;
 
+    protected void loadIcon() {
+        pictureIcon = Images.getImageIcon(Images.getImagePath(pictureName));
+    }
+    
     public TemplateBuilding(String name, Rectangle plot, int cost, String pictureName) {
         this.name = name;
         this.plot = plot;
         this.cost = cost;
         this.pictureName = pictureName;
-        this.picture = Images.getSprite(Images.getImagePath(pictureName));
+        loadIcon();
     }
 
     public String getName() {
@@ -56,19 +60,18 @@ public abstract class TemplateBuilding {
         return pictureName;
     }
 
-    public Sprite getPicture() {
-        return picture;
+    public ImageIcon getPictureIcon() {
+        return pictureIcon;
     }
 
-    protected JComponent[] toInfoComponents(Grid grid) {
-        JLabel buildingName = new JLabel(getName() + ", " + dimensionsToString());
-        Text.formatJLabel(buildingName);
+    protected Updatable[] toInfoComponents(Grid grid) {
+        BuildingNameLabel buildingName = new BuildingNameLabel(this);
 
-        PicturePanel buildingPicture = new PicturePanel(name, getPicture());
+        BuildingPictureLabel buildingPicture = new BuildingPictureLabel(this);
 
         AddBuildingButton buildingCost = new AddBuildingButton(grid, this);
         
-        return new JComponent[] {buildingName, buildingPicture, buildingCost};
+        return new Updatable[] {buildingName, buildingPicture, buildingCost};
     }
 
     public ComponentList toInfoComponentList(Grid grid) {

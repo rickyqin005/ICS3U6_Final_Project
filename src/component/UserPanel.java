@@ -2,17 +2,14 @@ package component;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Graphics;
-
-import javax.swing.JComponent;
-import javax.swing.JPanel;
 
 import component.label.PopulationLabel;
 import component.label.CurrencyLabel;
+import component.label.GameLabel;
 import component.label.TaxRateLabel;
 import utility.Direction;
 
-public class UserPanel extends JPanel {
+public class UserPanel extends GamePanel {
     public static final String NAME = "userPanel";
     private ComponentList labelList;
 
@@ -22,7 +19,7 @@ public class UserPanel extends JPanel {
         this.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
 
-        JComponent[] labels = {new PopulationLabel(grid), new CurrencyLabel(grid), new TaxRateLabel(grid)};
+        GameLabel[] labels = {new PopulationLabel(grid), new CurrencyLabel(grid), new TaxRateLabel(grid)};
         labelList = new ComponentList("info", labels, Direction.RIGHT, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
         gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.CENTER;
@@ -39,8 +36,7 @@ public class UserPanel extends JPanel {
     }
 
     @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g); //required
-        labelList.repaint();
+    public void update() {
+        labelList.update();
     }
 }

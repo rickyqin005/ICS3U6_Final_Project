@@ -5,7 +5,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -13,14 +12,13 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import component.optionpane.SaveGameOption;
 import core.Game;
 import utility.Images;
-import utility.Text;
 
-public class ExitButton extends JButton {
+public class ExitButton extends GameButton {
     private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("exit"));
     private static final String NAME = "exitButton";
+
     public ExitButton(Game game, int newState, boolean saveGame) {
         super(ICON);
-        Text.formatJButton(this);
         this.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -55,5 +53,9 @@ public class ExitButton extends JButton {
     @Override
     public String getName() {
         return NAME;
+    }
+
+    @Override
+    public void update() {
     }
 }

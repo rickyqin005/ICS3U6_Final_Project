@@ -1,23 +1,20 @@
 package component.label;
 
-import java.awt.Graphics;
-import javax.swing.JLabel;
-
 import component.Grid;
 import gameobject.building.ResidentialBuilding;
-import utility.Text;
 
-public class PopulationLabel extends JLabel {
+public class PopulationLabel extends GameLabel {
     private static final String NAME = "populationLabel";
     private Grid grid;
+
     public PopulationLabel(Grid grid) {
         super();
         this.grid = grid;
-        this.setText(populationToString());
-        Text.formatJLabel(this);
+        update();
     }
+
     public String populationToString() {
-        return "Population: " + ResidentialBuilding.getTotalPopulation(grid.getBuildings());
+        return "Population: " + String.format("%,d", ResidentialBuilding.getTotalPopulation(grid.getBuildings()));
     }
     
     @Override
@@ -26,9 +23,7 @@ public class PopulationLabel extends JLabel {
     }
 
     @Override
-    public void paintComponent(Graphics g) {
+    public void update() {
         setText(populationToString());
-
-        super.paintComponent(g);
     }
 }
