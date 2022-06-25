@@ -14,17 +14,15 @@ import utility.Images;
 public class AddBuildingButton extends GameButton {
     private static final ImageIcon ICON = new ImageIcon(Images.getIconPath("build"));
     private static final String NAME = "addBuildingButton";
+
     private Grid grid;
     private TemplateBuilding building;
+    
     public AddBuildingButton(Grid grid, TemplateBuilding building) {
         super();
         this.grid = grid;
-        setBuilding(building);
-        update();
-    }
-
-    public void setBuilding(TemplateBuilding building) {
         this.building = building;
+        update();
     }
     
     @Override

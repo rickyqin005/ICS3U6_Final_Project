@@ -1,7 +1,5 @@
 package component.label;
 
-import javax.swing.ImageIcon;
-
 import gameobject.building.TemplateBuilding;
 
 public class BuildingPictureLabel extends PictureLabel {

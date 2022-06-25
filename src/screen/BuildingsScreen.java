@@ -22,15 +22,20 @@ public class BuildingsScreen extends GameScreen {
     private ComponentList sideBar;
     private ModifyBuildingsPanel buildingSelection;
 
+    private Updatable[] getButtons(Game game) {
+        final Updatable[] buttons = {new ExitButton(game, GameState.GAMEPLAY, false), new ZoomInButton(game.getGrid()), 
+                new ZoomOutButton(game.getGrid()), new RoadButton(game), new BuildingButton(game), new CollectTaxButton(game.getGrid())};
+        ((BuildingButton)buttons[4]).setEnabled(false);
+        return buttons;
+    }
+
     public BuildingsScreen(Game currGame) {
         super(currGame);
 
         game.getGrid().setState(STATE);
         userPanel = new UserPanel(game.getGrid());
 
-        final Updatable[] buttons = {new ExitButton(game, GameState.GAMEPLAY, false), 
-                new ZoomInButton(game.getGrid()), new ZoomOutButton(game.getGrid()), new CollectTaxButton(game.getGrid())};
-        sideBar = new ComponentList("sideBar", buttons, Direction.DOWN, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE);
+        sideBar = new ComponentList("sideBar", getButtons(game), Direction.DOWN, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE);
         
         final ArrayList<TemplateBuilding> buildingList = new ArrayList<TemplateBuilding>();
         buildingList.addAll(TemplateResidentialBuilding.TEMPLATES);

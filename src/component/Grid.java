@@ -520,6 +520,7 @@ public class Grid extends GamePanel {
         public void zoomIn(Point focalPoint) {
             setScaleLevel(scaleLevel+1, focalPoint);
         }
+
         /**
          * Decreases the scale level by 1, causing the viewport to zoom out
          * @param focalPoint The point that the zoom is centered on (ie the point that doesn't move).
@@ -622,13 +623,16 @@ public class Grid extends GamePanel {
             accumulatedTax = Double.parseDouble(args[2]);
         }
 
+        /**
+         * Returns a string representing the current state of the user.
+         */
         @Override
         public String toString() {
             return balance + "\t" + lastTaxAccumulation + "\t" + accumulatedTax;
         }
 
         /**
-         * Returns the balance of the user account.
+         * Returns the current balance of the user's account.
          */
         public int getCurrency() {
             return balance;
@@ -636,6 +640,7 @@ public class Grid extends GamePanel {
 
         /**
          * Adds currency to the balance.
+         * @param amount The specified amount to add.
          */
         public void addCurrency(int amount) {
             balance += amount;

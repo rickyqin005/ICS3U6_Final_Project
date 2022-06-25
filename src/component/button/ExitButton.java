@@ -28,8 +28,6 @@ public class ExitButton extends GameButton {
                         return;
                     } else if(response == JOptionPane.YES_OPTION) {
                         saveGame(game);
-                    } else if(response == JOptionPane.NO_OPTION) {
-                        
                     }
                 }
 

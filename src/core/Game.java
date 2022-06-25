@@ -36,6 +36,8 @@ public class Game extends JFrame {
 
     private void startLoop() {
         while(true) {
+            
+            // watch out for multithreading issues
             if(!changingState) {
                 if(currScreen != null) {
                     currScreen.update();
